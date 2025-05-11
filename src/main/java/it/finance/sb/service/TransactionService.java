@@ -1,6 +1,6 @@
 package it.finance.sb.service;
 
-
+import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.model.account.AbstractAccount;
 import it.finance.sb.model.composite.TransactionList;
@@ -10,155 +10,163 @@ import it.finance.sb.model.user.User;
 import java.util.Date;
 
 public class TransactionService implements InterfaceService<AbstractTransaction> {
-    //TODO The transaction service must expose all the method that can be done with transaction
 
-    private User user;
+    private final User user;
 
     public TransactionService(User user) {
         this.user = user;
     }
 
-    //TODO CREATE TRANSACTION
-    //@Override
-    public AbstractTransaction create(TransactionType type, double amount, String reason, Date date, AbstractAccount toAccount, AbstractAccount fromAccount) throws Exception {
-        //Controllare che il valore sia positivo
-        if (amount <= 0) {
-            //throw new Exception
-            System.out.println("Non si possono inserire transazioni con valore <=0");
-        }
-        if (fromAccount != null && fromAccount.getBalance() < amount) {
-            // throw new Exception
-            System.out.println("Non si possono inserire transazioni con un valore più alto del balance dell'account scelto");
-        }
-        //TODO ricordarsi di controllare la riflessione degli account
-        //Modifica gli account in base al tipo della transazione
-        switch (type) {
-            case INCOME:
-                toAccount.update(amount);
-                break;
-            case EXPENSE:
-                //Controllare che il valore non sia più grande di from account
-                fromAccount.update(-amount);
-                break;
-            case MOVEMENT:
-                //Controllare che il valore non sia più grande di from account
-                toAccount.update(amount);
-                fromAccount.update(-amount);
-                break;
-        }
+    /**
+     * Creates a transaction and applies its financial effect to accounts.
+     * Supports INCOME, EXPENSE, and MOVEMENT types.
+     */
+    public AbstractTransaction create(TransactionType type, double amount, String reason, Date date,
+                                      AbstractAccount toAccount, AbstractAccount fromAccount) throws TransactionOperationException {
+        try {
+            if (amount <= 0) {
+                throw new TransactionOperationException("Transaction amount must be greater than 0.");
+            }
 
-        // Crea transazione
-        AbstractTransaction transaction = TransactionFactory.createTransaction(type, amount, reason, date, toAccount, fromAccount);
-        //Aggiorna i dati dello user, Account e Transazione
-        this.user.addTransaction(transaction);
-        //Ritorna la transazione
-        return transaction;
+            if (fromAccount != null && fromAccount.getBalance() < amount) {
+                throw new TransactionOperationException("Insufficient funds in source account.");
+            }
+
+            // Apply balance changes based on transaction type
+            //TODO add excpetion? for null account?
+            switch (type) {
+                case INCOME -> {
+                    if (toAccount != null) toAccount.update(amount);
+                }
+                case EXPENSE -> {
+                    if (fromAccount != null) fromAccount.update(-amount);
+                }
+                case MOVEMENT -> {
+                    if (toAccount != null && fromAccount != null) {
+                        toAccount.update(amount);
+                        fromAccount.update(-amount);
+                    }
+                }
+                default -> throw new TransactionOperationException("Unsupported transaction type: " + type);
+            }
+
+            // Create transaction and persist
+            AbstractTransaction transaction = TransactionFactory.createTransaction(type, amount, reason, date, toAccount, fromAccount);
+            user.addTransaction(transaction);
+            return transaction;
+
+        } catch (Exception e) {
+            throw new TransactionOperationException("Failed to create transaction: " + e.getMessage(), e);
+        }
     }
 
-    //@Override
-    public AbstractTransaction delete(AbstractTransaction transaction) {
+    /**
+     * Deletes a transaction and reverses its financial effects.
+     */
+    public AbstractTransaction delete(AbstractTransaction transaction) throws TransactionOperationException {
         if (transaction == null) {
-            throw new IllegalArgumentException("Cannot delete a null transaction");
+            throw new TransactionOperationException("Cannot delete a null transaction.");
         }
 
-        double amount = transaction.getAmount();
-        TransactionType type = transaction.getType();
+        try {
+            double amount = transaction.getAmount();
+            TransactionType type = transaction.getType();
 
-        switch (type) {
-            case INCOME -> {
-                AbstractAccount to = ((IncomeTransaction) transaction).getToAccount();
-                if (to != null) {
-                    to.update(-amount);
+            // Reverse transaction impact
+            switch (type) {
+                case INCOME -> {
+                    AbstractAccount to = ((IncomeTransaction) transaction).getToAccount();
+                    if (to != null) to.update(-amount);
                 }
-            }
-            case EXPENSE -> {
-                AbstractAccount from = ((ExpenseTransaction) transaction).getFromAccount();
-                if (from != null) {
-                    from.update(amount);
+                case EXPENSE -> {
+                    AbstractAccount from = ((ExpenseTransaction) transaction).getFromAccount();
+                    if (from != null) from.update(amount);
                 }
-            }
-            case MOVEMENT -> {
-                MovementTransaction move = (MovementTransaction) transaction;
-                AbstractAccount from = move.getFromAccount();
-                AbstractAccount to = move.getToAccount();
-                if (from != null && to != null) {
-                    from.update(amount);
-                    to.update(-amount);
+                case MOVEMENT -> {
+                    MovementTransaction move = (MovementTransaction) transaction;
+                    move.getFromAccount().update(amount);
+                    move.getToAccount().update(-amount);
                 }
+                default -> throw new TransactionOperationException("Unsupported transaction type: " + type);
             }
-            default -> throw new IllegalArgumentException("Unsupported transaction type: " + type);
+
+            // Remove from transaction list
+            TransactionList list = user.getTransactionLists().get(type);
+            if (list != null) {
+                list.remove(transaction);
+            }
+
+            return transaction;
+
+        } catch (Exception e) {
+            throw new TransactionOperationException("Failed to delete transaction: " + e.getMessage(), e);
         }
-
-        // Remove the transaction from user's transaction list
-        user.getTransactionLists().get(type).remove(transaction);
-
-        return transaction;
     }
 
-    //TODO MODIFY TRANSACTION
-    //@Override
+    /**
+     * Modifies a transaction by reversing the original and applying a new one.
+     */
     public AbstractTransaction modify(AbstractTransaction original,
                                       double newAmount,
                                       String newReason,
                                       Date newDate,
                                       AbstractAccount newTo,
-                                      AbstractAccount newFrom) throws Exception {
+                                      AbstractAccount newFrom) throws TransactionOperationException {
         if (original == null || newAmount <= 0) {
-            throw new IllegalArgumentException("Invalid transaction modification parameters.");
+            throw new TransactionOperationException("Invalid input for modifying transaction.");
         }
 
-        TransactionType type = original.getType();
-        double oldAmount = original.getAmount();
+        try {
+            TransactionType type = original.getType();
+            double oldAmount = original.getAmount();
 
-        // Reverse original transaction
-        switch (type) {
-            case INCOME -> {
-                AbstractAccount to = ((IncomeTransaction) original).getToAccount();
-                if (to != null) to.update(-oldAmount);
-            }
-            case EXPENSE -> {
-                AbstractAccount from = ((ExpenseTransaction) original).getFromAccount();
-                if (from != null) from.update(oldAmount);
-            }
-            case MOVEMENT -> {
-                MovementTransaction move = (MovementTransaction) original;
-                move.getFromAccount().update(oldAmount);
-                move.getToAccount().update(-oldAmount);
-            }
-        }
-
-        // Apply new transaction effects
-        switch (type) {
-            case INCOME -> {
-                if (newTo == null) throw new IllegalArgumentException("To Account is required for income");
-                newTo.update(newAmount);
-            }
-            case EXPENSE -> {
-                if (newFrom == null || newFrom.getBalance() < newAmount) {
-                    throw new IllegalArgumentException("Invalid or insufficient funds in from account.");
+            // Reverse original transaction
+            switch (type) {
+                case INCOME -> ((IncomeTransaction) original).getToAccount().update(-oldAmount);
+                case EXPENSE -> ((ExpenseTransaction) original).getFromAccount().update(oldAmount);
+                case MOVEMENT -> {
+                    MovementTransaction move = (MovementTransaction) original;
+                    move.getFromAccount().update(oldAmount);
+                    move.getToAccount().update(-oldAmount);
                 }
-                newFrom.update(-newAmount);
+                default -> throw new TransactionOperationException("Unsupported transaction type: " + type);
             }
-            case MOVEMENT -> {
-                if (newFrom == null || newTo == null || newFrom.getBalance() < newAmount) {
-                    throw new IllegalArgumentException("Invalid or insufficient funds for movement.");
+
+            // Apply new transaction effect
+            switch (type) {
+                case INCOME -> {
+                    if (newTo == null) throw new TransactionOperationException("ToAccount is required for INCOME.");
+                    newTo.update(newAmount);
                 }
-                newFrom.update(-newAmount);
-                newTo.update(newAmount);
+                case EXPENSE -> {
+                    if (newFrom == null || newFrom.getBalance() < newAmount) {
+                        throw new TransactionOperationException("Insufficient funds or missing FromAccount for EXPENSE.");
+                    }
+                    newFrom.update(-newAmount);
+                }
+                case MOVEMENT -> {
+                    if (newFrom == null || newTo == null || newFrom.getBalance() < newAmount) {
+                        throw new TransactionOperationException("Invalid accounts or insufficient funds for MOVEMENT.");
+                    }
+                    newFrom.update(-newAmount);
+                    newTo.update(newAmount);
+                }
             }
+
+            // Create and replace transaction
+            AbstractTransaction updatedTransaction = TransactionFactory.createTransaction(
+                    type, newAmount, newReason, newDate, newTo, newFrom);
+
+            TransactionList transactionList = user.getTransactionLists().get(type);
+            if (transactionList != null) {
+                transactionList.remove(original);
+                transactionList.addTransaction(updatedTransaction);
+            }
+
+            return updatedTransaction;
+
+        } catch (Exception e) {
+            throw new TransactionOperationException("Failed to modify transaction: " + e.getMessage(), e);
         }
-
-        // Create a new transaction object
-        AbstractTransaction updatedTransaction = TransactionFactory.createTransaction(
-                type, newAmount, newReason, newDate, newTo, newFrom);
-
-        // Replace the original in the list
-        TransactionList txList = user.getTransactionLists().get(type);
-        txList.remove(original);
-        txList.addTransaction(updatedTransaction);
-
-        return updatedTransaction;
     }
-
-//TODO SUGGESTION
 }
