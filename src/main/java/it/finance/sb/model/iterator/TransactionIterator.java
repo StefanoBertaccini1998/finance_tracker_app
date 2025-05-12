@@ -5,4 +5,6 @@ import it.finance.sb.model.transaction.AbstractTransaction;
 public interface TransactionIterator {
     boolean hasNext();
     AbstractTransaction next();
+
+    void remove();
 }

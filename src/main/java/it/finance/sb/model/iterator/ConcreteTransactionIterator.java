@@ -5,10 +5,12 @@ import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class ConcreteTransactionIterator implements TransactionIterator {
     private final List<CompositeTransaction> transactions;
-    private int position = 0;
+    private int currentIndex = 0;
+    private int lastReturnedIndex = -1;
 
     public ConcreteTransactionIterator(List<CompositeTransaction> transactions) {
         this.transactions = transactions;
@@ -16,20 +18,38 @@ public class ConcreteTransactionIterator implements TransactionIterator {
 
     @Override
     public boolean hasNext() {
-        return position < transactions.size();
+        return currentIndex < transactions.size();
     }
 
     @Override
     public AbstractTransaction next() {
-        CompositeTransaction compositeTransaction = transactions.get(position++);
-        if (compositeTransaction instanceof AbstractTransaction transaction) {
+        if (!hasNext()) {
+            throw new NoSuchElementException("No more transactions.");
+        }
+
+        CompositeTransaction ct = transactions.get(currentIndex);
+        lastReturnedIndex = currentIndex++; // ✅ track the one returned
+        if (ct instanceof AbstractTransaction transaction) {
             return transaction;
-            //TODO check this branch of next if it ha sense, I would not accept inside of inside.
-        } else if (compositeTransaction instanceof TransactionList transaction) {
-            // Recursive iterator logic for nested composite
-            return transaction.iterator().next();
+        } else if (ct instanceof TransactionList nested) {
+            TransactionIterator nestedIt = nested.iterator();
+            return nestedIt.hasNext() ? nestedIt.next() : null; // TODO ❌ currently unsafe
         } else {
-            throw new IllegalStateException("Invalid transaction type");
+            throw new IllegalStateException("Invalid transaction type at index " + lastReturnedIndex);
         }
     }
+
+    @Override
+    public void remove() {
+        if (lastReturnedIndex < 0) {
+            throw new IllegalStateException("Cannot remove before calling next()");
+        }
+        transactions.remove(lastReturnedIndex);
+        if (lastReturnedIndex < currentIndex) {
+            currentIndex--; // adjust if we removed something before where we’re going
+        }
+        lastReturnedIndex = -1; // reset so user can't call remove twice
+    }
+
+
 }

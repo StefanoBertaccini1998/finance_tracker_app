@@ -1,8 +1,11 @@
 package it.finance.sb.model.account;
 
+import it.finance.sb.annotation.Sanitize;
+
 public abstract class AbstractAccount {
     protected final int accountId;
     private static int idCounter = 0;
+    @Sanitize(maxLength = 30)
     protected String name;
     protected double balance;
 

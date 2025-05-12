@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class TransactionList implements CompositeTransaction{
+public class TransactionList implements CompositeTransaction {
     private List<CompositeTransaction> transactionList;
 
     @Override
@@ -17,23 +17,27 @@ public class TransactionList implements CompositeTransaction{
     }
 
     @Override
-    public void getTotal() {
-
+    public double getTotal() {
+        return transactionList.stream()
+                .filter(t -> t instanceof AbstractTransaction)
+                .map(t -> (AbstractTransaction) t)
+                .mapToDouble(AbstractTransaction::getAmount)
+                .sum();
     }
 
     public TransactionList() {
         this.transactionList = new ArrayList<>();
     }
 
-    public void addTransaction(AbstractTransaction transaction){
+    public void addTransaction(AbstractTransaction transaction) {
         transactionList.add(transaction);
     }
 
-    public void addTransactions(List<AbstractTransaction> transactions){
+    public void addTransactions(List<AbstractTransaction> transactions) {
         transactions.forEach(this::addTransaction);
     }
 
-    public void remove(AbstractTransaction transaction){
+    public void remove(AbstractTransaction transaction) {
         transactionList.remove(transaction);
     }
 
@@ -55,5 +59,17 @@ public class TransactionList implements CompositeTransaction{
         }
         return false;
     }
+    public List<AbstractTransaction> filterByReason(String reason) {
+        return transactionList.stream()
+                .filter(t -> t instanceof AbstractTransaction tx && tx.getReason().equalsIgnoreCase(reason))
+                .map(t -> (AbstractTransaction) t)
+                .toList();
+    }
 
+    public List<AbstractTransaction> filterByMinAmount(double min) {
+        return transactionList.stream()
+                .filter(t -> t instanceof AbstractTransaction tx && tx.getAmount() >= min)
+                .map(t -> (AbstractTransaction) t)
+                .toList();
+    }
 }

@@ -1,6 +1,7 @@
 package it.finance.sb.model.transaction;
 
 
+import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.composite.CompositeTransaction;
 
 import java.util.Date;
@@ -10,21 +11,22 @@ public abstract class AbstractTransaction implements CompositeTransaction {
     protected final int transactionId;  // UNIQUE + final
     private static int idCounter = 0;
     protected double amount;
+    @Sanitize(notBlank = false, maxLength = 50)
     protected String reason;
     protected Date date;
+    @Sanitize(maxLength = 30)
+    protected  String category;
 
     protected TransactionType type;
 
-    protected AbstractTransaction(double amount, String reason, Date date, TransactionType type) {
+    protected AbstractTransaction(double amount,String category, String reason, Date date, TransactionType type) {
         this.amount = amount;
         this.reason = reason;
         this.date = date;
         this.type = type;
+        this.category = category;
         this.transactionId = ++idCounter;
     }
-
-    //TODO modify this method
-    abstract void modifyTransaction();
 
     public double getAmount() {
         return amount;

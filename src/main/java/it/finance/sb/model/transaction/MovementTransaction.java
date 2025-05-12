@@ -9,8 +9,8 @@ public class MovementTransaction extends AbstractTransaction {
     private AbstractAccount toAccount;
     private AbstractAccount fromAccount;
 
-    public MovementTransaction(double amount, String reason, Date date, AbstractAccount toAccount, AbstractAccount fromAccount) {
-        super(amount, reason, date, TransactionType.MOVEMENT);
+    public MovementTransaction(double amount, String category, String reason, Date date, AbstractAccount toAccount, AbstractAccount fromAccount) {
+        super(amount, category, reason, date, TransactionType.MOVEMENT);
         this.toAccount = toAccount;
         this.fromAccount = fromAccount;
     }
@@ -33,16 +33,13 @@ public class MovementTransaction extends AbstractTransaction {
 
     @Override
     public void displayTransaction() {
-        System.out.printf("Movement Transaction of %f - from %s - to %s - in %s - reason %s %n",amount,fromAccount.getName(),toAccount.getName(),date,reason);
+        System.out.printf("Movement Transaction of %f - from %s - to %s - in %s - reason %s %n", amount, fromAccount.getName(), toAccount.getName(), date, reason);
     }
 
     @Override
-    public void getTotal() {
+    public double getTotal() {
 
+        return amount;
     }
 
-    @Override
-    void modifyTransaction() {
-
-    }
 }

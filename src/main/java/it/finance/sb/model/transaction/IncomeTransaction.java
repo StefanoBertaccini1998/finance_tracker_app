@@ -7,8 +7,9 @@ import java.util.Date;
 public class IncomeTransaction extends AbstractTransaction {
 
     private AbstractAccount toAccount;
-    public IncomeTransaction(double amount, String reason, Date date,AbstractAccount toAccount) {
-        super(amount, reason, date,TransactionType.INCOME);
+
+    public IncomeTransaction(double amount, String category, String reason, Date date, AbstractAccount toAccount) {
+        super(amount, category, reason, date, TransactionType.INCOME);
         this.toAccount = toAccount;
     }
 
@@ -22,16 +23,13 @@ public class IncomeTransaction extends AbstractTransaction {
 
     @Override
     public void displayTransaction() {
-        System.out.printf("Income Transaction of %f - to %s - in %s - reason %s %n",amount,toAccount.getName(),date,reason);
+        System.out.printf("Income Transaction of %f - to %s - in %s - reason %s %n", amount, toAccount.getName(), date, reason);
     }
 
     @Override
-    public void getTotal() {
+    public double getTotal() {
 
+        return amount;
     }
 
-    @Override
-    void modifyTransaction() {
-
-    }
 }

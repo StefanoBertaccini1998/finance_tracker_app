@@ -2,21 +2,27 @@ package it.finance.sb.service;
 
 import it.finance.sb.model.account.AbstractAccount;
 import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.transaction.AbstractTransaction;
+import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
 import org.junit.jupiter.api.*;
+
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AccountServiceTest {
 
     private AccountService accountService;
+    private TransactionService transactionService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        user = new User("TestUser",26, Gender.MALE);
-        accountService = new AccountService(user);
+        user = new User("TestUser", 26, Gender.MALE);
+        transactionService = new TransactionService(user);
+        accountService = new AccountService(user, transactionService);
     }
 
     @Test
@@ -38,11 +44,22 @@ class AccountServiceTest {
     }
 
     @Test
-    void testDeleteAccount() throws Exception {
-        AbstractAccount account = accountService.create(AccounType.BANK, "ToDelete", 250);
-        AbstractAccount deleted = accountService.delete(account);
+    void testDeleteAccountAlsoRemovesTransactions() throws Exception {
+        // Create account and another to use in movement
+        AbstractAccount toDelete = accountService.create(AccounType.BANK, "Victim", 500);
+        AbstractAccount other = accountService.create(AccounType.BANK, "Other", 500);
 
-        assertEquals(account, deleted);
-        assertFalse(user.getAccountList().contains(account));
+        // Create a transaction that uses the account
+        AbstractTransaction tx = transactionService.create(TransactionType.EXPENSE, 100, "TestExpense","DeleteExpense", new Date(), null, toDelete);
+
+        assertEquals(400, toDelete.getBalance());
+
+        // Now delete the account
+        AbstractAccount deleted = accountService.delete(toDelete);
+
+        assertEquals(toDelete, deleted);
+        assertFalse(user.getAccountList().contains(toDelete));
+
+        assertFalse(user.getTransactionLists().get(TransactionType.EXPENSE).iterator().hasNext());
     }
 }

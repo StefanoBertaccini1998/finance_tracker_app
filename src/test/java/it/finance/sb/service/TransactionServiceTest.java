@@ -24,8 +24,9 @@ class TransactionServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         user = new User("TestUser",99, Gender.OTHER);
-        accountService = new AccountService(user);
+
         transactionService = new TransactionService(user);
+        accountService = new AccountService(user,transactionService);
 
         acc1 = accountService.create(AccounType.BANK, "Main", 1000.0);
         acc2 = accountService.create(AccounType.BANK, "Savings", 500.0);
@@ -33,7 +34,7 @@ class TransactionServiceTest {
 
     @Test
     void testCreateIncomeTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 200, "Salary", new Date(), acc1, null);
+        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 200, "Salary","April work", new Date(), acc1, null);
 
         assertEquals(1200, acc1.getBalance());
         assertTrue(user.getTransactionLists().get(TransactionType.INCOME).iterator().hasNext());
@@ -41,7 +42,7 @@ class TransactionServiceTest {
 
     @Test
     void testCreateExpenseTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.EXPENSE, 150, "Groceries", new Date(), null, acc1);
+        AbstractTransaction transaction = transactionService.create(TransactionType.EXPENSE, 150, "Groceries", "Apples and Banans", new Date(), null, acc1);
 
         assertEquals(850, acc1.getBalance());
         assertTrue(user.getTransactionLists().get(TransactionType.EXPENSE).iterator().hasNext());
@@ -49,7 +50,7 @@ class TransactionServiceTest {
 
     @Test
     void testCreateMovementTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.MOVEMENT, 100, "Transfer", new Date(), acc2, acc1);
+        AbstractTransaction transaction = transactionService.create(TransactionType.MOVEMENT, 100, "Transfer", "Send money to mum", new Date(), acc2, acc1);
 
         assertEquals(900, acc1.getBalance());
         assertEquals(600, acc2.getBalance());
@@ -58,20 +59,20 @@ class TransactionServiceTest {
     @Test
     void testCreateInvalidAmount() {
         Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.create(TransactionType.INCOME, -100, "Invalid", new Date(), acc1, null);
+            transactionService.create(TransactionType.INCOME, -100, "Invalid", "Invalid", new Date(), acc1, null);
         });
     }
 
     @Test
     void testCreateExpenseWithInsufficientFunds() {
         Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.create(TransactionType.EXPENSE, 9999, "Too much", new Date(), null, acc2);
+            transactionService.create(TransactionType.EXPENSE, 9999, "Too much","Too much", new Date(), null, acc2);
         });
     }
 
     @Test
     void testDeleteIncomeTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 100, "Refund", new Date(), acc1, null);
+        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 100, "Refund","riento pezzo rotto", new Date(), acc1, null);
         assertEquals(1100, acc1.getBalance());
 
         transactionService.delete(transaction);
@@ -80,7 +81,7 @@ class TransactionServiceTest {
 
     @Test
     void testDeleteExpenseTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.EXPENSE, 200, "Utilities", new Date(), null, acc1);
+        AbstractTransaction transaction = transactionService.create(TransactionType.EXPENSE, 200, "Utilities","Gamepad", new Date(), null, acc1);
         assertEquals(800, acc1.getBalance());
 
         transactionService.delete(transaction);
@@ -89,13 +90,14 @@ class TransactionServiceTest {
 
     @Test
     void testModifyTransaction() throws Exception {
-        AbstractTransaction original = transactionService.create(TransactionType.EXPENSE, 100, "Lunch", new Date(), null, acc1);
+        AbstractTransaction original = transactionService.create(TransactionType.EXPENSE, 100, "Lunch","pranzo di pasqua", new Date(), null, acc1);
         assertEquals(900, acc1.getBalance());
 
         AbstractTransaction modified = transactionService.modify(
                 original,
                 200,
                 "Dinner",
+                "cena di lavoro",
                 new Date(),
                 null,
                 acc1
@@ -107,10 +109,10 @@ class TransactionServiceTest {
 
     @Test
     void testModifyWithInsufficientFunds() throws Exception {
-        AbstractTransaction original = transactionService.create(TransactionType.EXPENSE, 100, "Lunch", new Date(), null, acc2);
+        AbstractTransaction original = transactionService.create(TransactionType.EXPENSE, 100, "Lunch","Meeting lunch", new Date(), null, acc2);
 
         Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.modify(original, 9999, "Dinner", new Date(), null, acc2);
+            transactionService.modify(original, 9999, "Dinner","Meeting Dinner", new Date(), null, acc2);
         });
     }
 }

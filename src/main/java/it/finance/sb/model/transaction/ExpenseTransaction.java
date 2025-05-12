@@ -8,8 +8,8 @@ import java.util.Date;
 public class ExpenseTransaction extends AbstractTransaction {
 
     private AbstractAccount fromAccount;
-    public ExpenseTransaction(double amount, String reason, Date date, AbstractAccount fromAccount) {
-        super(amount, reason, date,TransactionType.EXPENSE);
+    public ExpenseTransaction(double amount, String category, String reason, Date date, AbstractAccount fromAccount) {
+        super(amount, category, reason, date,TransactionType.EXPENSE);
         this.fromAccount = fromAccount;
     }
 
@@ -27,12 +27,9 @@ public class ExpenseTransaction extends AbstractTransaction {
     }
 
     @Override
-    public void getTotal() {
+    public double getTotal() {
 
+        return amount;
     }
 
-    @Override
-    void modifyTransaction() {
-
-    }
 }

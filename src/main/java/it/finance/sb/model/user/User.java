@@ -1,21 +1,21 @@
 package it.finance.sb.model.user;
 
+import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.account.AbstractAccount;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class User {
+    @Sanitize(notBlank = true, maxLength = 50)
     private String name;
     private int age;
     private Gender gender;
     private Map<TransactionType, TransactionList> transactionsMap;
     private List<AbstractAccount> accountList;
+    private Set<String> categorySet = new HashSet<>(List.of("Food", "Utilities", "Transport"));
 
     public User(String name, int age, Gender gender) {
         this.name = name;
@@ -73,6 +73,14 @@ public class User {
         this.accountList.add(account);
     }
 
+    public boolean isCategoryAllowed(String category) {
+        return categorySet.contains(category);
+    }
+
+    public void addCategory(String category) {
+        categorySet.add(category);
+    }
+
     public void addTransaction(AbstractTransaction transaction) {
         this.transactionsMap.get(transaction.getType()).addTransaction(transaction);
     }
@@ -80,15 +88,24 @@ public class User {
     public void updateAccount(AbstractAccount account){
 
     }
-
-    public void getFullBalance(){
-        accountList.forEach(x-> System.out.println("Balance of "+x.getName()+": "+x.getBalance()));
+    public Map<String, Double> getAllAccountBalances() {
+        Map<String, Double> result = new HashMap<>();
+        for (AbstractAccount account : accountList) {
+            result.put(account.getName(), account.getBalance());
+        }
+        return result;
     }
 
-    public void getFullTransaction(){
-        transactionsMap.forEach((x,y) -> {
-            System.out.println("Transaction type:"+x.name());
-            y.displayTransaction();
-        });
+    public Map<TransactionType, List<AbstractTransaction>> getAllTransactions() {
+        Map<TransactionType, List<AbstractTransaction>> result = new HashMap<>();
+        for (var entry : transactionsMap.entrySet()) {
+            List<AbstractTransaction> txs = new ArrayList<>();
+            var iterator = entry.getValue().iterator();
+            while (iterator.hasNext()) {
+                txs.add(iterator.next());
+            }
+            result.put(entry.getKey(), txs);
+        }
+        return result;
     }
 }
