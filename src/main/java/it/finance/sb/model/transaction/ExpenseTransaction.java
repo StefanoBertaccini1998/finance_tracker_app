@@ -56,15 +56,14 @@ public class ExpenseTransaction extends AbstractTransaction {
 
     @Override
     public String toCsv() {
-        return String.join(",", String.valueOf(transactionId), String.valueOf(amount),
-                reason, String.valueOf(date.getTime()), type.name(), "" + fromAccount.getAccountId(), category);
+        return formatCsvLine(fromAccount.getName(), null, category, reason, date.getTime());
     }
 
     public static ExpenseTransaction fromCsv(String[] fields, AbstractAccount from) throws Exception {
-        double amount = Double.parseDouble(fields[1]);
-        String reason = fields[2];
-        Date date = new Date(Long.parseLong(fields[3]));
-        String category = fields.length > 6 ? fields[6] : "Uncategorized";
+        double amount = Double.parseDouble(fields[2]);
+        String category = fields[5];
+        String reason = fields[6];
+        Date date = new Date(Long.parseLong(fields[7]));
         return new ExpenseTransaction(amount, category, reason, date, from);
     }
 }

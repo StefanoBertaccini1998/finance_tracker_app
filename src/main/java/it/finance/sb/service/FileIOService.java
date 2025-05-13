@@ -9,10 +9,13 @@ import it.finance.sb.model.user.User;
 import it.finance.sb.utility.InputSanitizer;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class FileIOService {
 
@@ -26,19 +29,16 @@ public class FileIOService {
     /**
      * Imports a list of transactions from a CSV file and adds them to the user.
      */
-    public void importTransactions(Path filePath) throws TransactionOperationException {
+    public void importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors) throws TransactionOperationException {
         try {
             // Map<AccountId, Account>
-            Map<Integer, AbstractAccount> accountMap = new HashMap<>();
-            for (AbstractAccount acc : user.getAccountList()) {
-                accountMap.put(acc.getAccountId(), acc);
-            }
+            Map<String, AbstractAccount> accountMap = user.getAccountList().stream()
+                    .collect(Collectors.toMap(AbstractAccount::getName, Function.identity()));
+            List<String> errors = new ArrayList<>();
 
-            List<AbstractTransaction> transactions = CsvTransactionImporter.importTransactions(filePath, accountMap);
+            List<AbstractTransaction> transactions = CsvTransactionImporter.importTransactions(filePath, accountMap, autoCreateAccounts, skipErrors, errors);
 
             for (AbstractTransaction transaction : transactions) {
-                // Validate each transaction object
-                InputSanitizer.validate(transaction);
 
                 // Add categories (if not present)
                 if (transaction.getCategory() != null && !user.isCategoryAllowed(transaction.getCategory())) {
@@ -46,6 +46,10 @@ public class FileIOService {
                 }
                 // Add to user's transaction map
                 user.addTransaction(transaction);
+            }
+
+            if (!errors.isEmpty()) {
+                logger.warning("[FileIOService] Some lines failed: \n" + String.join("\n", errors));
             }
 
             logger.info("[FileIOService] Successfully imported " + transactions.size() + " transactions from CSV.");

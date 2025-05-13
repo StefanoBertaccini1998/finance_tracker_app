@@ -155,6 +155,19 @@ public abstract class AbstractTransaction implements CompositeTransaction, CsvSe
     public void setCategory(String category) {
         this.category = category;
     }
+
+    public String formatCsvLine(String from, String to, String category, String reason, long dateMillis) {
+        return String.join(",",
+                String.valueOf(transactionId),
+                type.name(),
+                String.valueOf(amount),
+                from == null ? "" : from,
+                to == null ? "" : to,
+                category == null ? "" : category,
+                reason == null ? "" : reason,
+                String.valueOf(dateMillis)
+        );
+    }
 }
 
 

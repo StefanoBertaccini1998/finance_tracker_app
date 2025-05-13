@@ -18,7 +18,7 @@ public class User {
     private Gender gender;
     private Map<TransactionType, TransactionList> transactionsMap;
     private List<AbstractAccount> accountList;
-    private Set<String> categorySet = new HashSet<>(List.of("Food", "Utilities", "Transport"));
+    private Set<String> categorySet;
 
     /**
      * Instantiates a new User.
@@ -32,6 +32,7 @@ public class User {
         this.age = age;
         this.gender = gender;
         createTransactionList();
+        this.categorySet = new HashSet<>(List.of("Food", "Utilities", "Transport"));
         accountList = new ArrayList<>();
     }
 

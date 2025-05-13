@@ -1,8 +1,10 @@
 package it.finance.sb.model.transaction;
 
+import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.model.account.AbstractAccount;
 
 import java.util.Date;
+import java.util.Map;
 
 /**
  * The type Income transaction.
@@ -55,15 +57,14 @@ public class IncomeTransaction extends AbstractTransaction {
 
     @Override
     public String toCsv() {
-        return String.join(",", String.valueOf(transactionId), String.valueOf(amount),
-                reason, String.valueOf(date.getTime()), type.name(), toAccount.getAccountId() + "", category);
+        return formatCsvLine(null, toAccount.getName(), category, reason, date.getTime());
     }
 
-    public static IncomeTransaction fromCsv(String[] fields, AbstractAccount to) throws Exception {
-        double amount = Double.parseDouble(fields[1]);
-        String reason = fields[2];
-        Date date = new Date(Long.parseLong(fields[3]));
-        String category = fields.length > 6 ? fields[6] : "Uncategorized";
-        return new IncomeTransaction(amount, category, reason, date, to);
+    public static IncomeTransaction fromCsv(String[] fields, AbstractAccount to) {
+        double amount = Double.parseDouble(fields[2]);
+        String category = fields[5];
+        String reason = fields[6];
+        Date date = new Date(Long.parseLong(fields[7]));
+        return new IncomeTransaction(amount, reason, category, date, to);
     }
 }

@@ -9,9 +9,10 @@ import java.util.List;
 public class CsvWriter<T extends CsvSerializable> {
     public void writeToFile(List<T> data, Path outputFile) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
+            writer.write("TransactionId,Type,Amount,From,To,Category,Reason,Date");
             for (T item : data) {
-                writer.write(item.toCsv());
                 writer.newLine();
+                writer.write(item.toCsv());
             }
         }
     }

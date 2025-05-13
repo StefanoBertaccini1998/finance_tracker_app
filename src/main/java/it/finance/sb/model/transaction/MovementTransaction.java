@@ -77,16 +77,15 @@ public class MovementTransaction extends AbstractTransaction {
 
     @Override
     public String toCsv() {
-        return String.join(",", String.valueOf(transactionId), String.valueOf(amount),
-                reason, String.valueOf(date.getTime()), type.name(), toAccount.getAccountId()+"", fromAccount.getAccountId()+"", category);
+        return formatCsvLine(fromAccount.getName(), toAccount.getName(), category, reason, date.getTime());
     }
 
-    public static MovementTransaction fromCsv(String[] fields, AbstractAccount to, AbstractAccount from) throws Exception {
-        double amount = Double.parseDouble(fields[1]);
-        String reason = fields[2];
-        Date date = new Date(Long.parseLong(fields[3]));
-        String category = fields.length > 6 ? fields[6] : "Uncategorized";
-        return new MovementTransaction(amount,category, reason, date, to,from);
+    public static MovementTransaction fromCsv(String[] fields, AbstractAccount to, AbstractAccount from) {
+        double amount = Double.parseDouble(fields[2]);
+        String category = fields[5];
+        String reason = fields[6];
+        Date date = new Date(Long.parseLong(fields[7]));
+        return new MovementTransaction(amount, category, reason, date, to, from);
     }
 
 }
