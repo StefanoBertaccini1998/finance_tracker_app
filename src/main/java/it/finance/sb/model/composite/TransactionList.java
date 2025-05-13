@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * The type Transaction list.
+ */
 public class TransactionList implements CompositeTransaction {
     private List<CompositeTransaction> transactionList;
 
@@ -25,27 +28,56 @@ public class TransactionList implements CompositeTransaction {
                 .sum();
     }
 
+    /**
+     * Instantiates a new Transaction list.
+     */
     public TransactionList() {
         this.transactionList = new ArrayList<>();
     }
 
+    /**
+     * Add transaction.
+     *
+     * @param transaction the transaction
+     */
     public void addTransaction(AbstractTransaction transaction) {
         transactionList.add(transaction);
     }
 
+    /**
+     * Add transactions.
+     *
+     * @param transactions the transactions
+     */
     public void addTransactions(List<AbstractTransaction> transactions) {
         transactions.forEach(this::addTransaction);
     }
 
+    /**
+     * Remove.
+     *
+     * @param transaction the transaction
+     */
     public void remove(AbstractTransaction transaction) {
         transactionList.remove(transaction);
     }
 
-    //get Iterator for the Transaction list
+    /**
+     * Iterator transaction iterator.
+     *
+     * @return the transaction iterator
+     */
     public TransactionIterator iterator() {
         return new ConcreteTransactionIterator(this.transactionList);
     }
 
+    /**
+     * Modify transaction by id boolean.
+     *
+     * @param id       the id
+     * @param modifier the modifier
+     * @return the boolean
+     */
     //TODO un po' complesso pure per le mie capacità
     //TODO Valutare la complessità della possibile istanza singola transaction come compoiste transaction e se deve essere aggiunto alla interface
     public boolean modifyTransactionById(int id, Consumer<AbstractTransaction> modifier) {
@@ -59,6 +91,13 @@ public class TransactionList implements CompositeTransaction {
         }
         return false;
     }
+
+    /**
+     * Filter by reason list.
+     *
+     * @param reason the reason
+     * @return the list
+     */
     public List<AbstractTransaction> filterByReason(String reason) {
         return transactionList.stream()
                 .filter(t -> t instanceof AbstractTransaction tx && tx.getReason().equalsIgnoreCase(reason))
@@ -66,6 +105,12 @@ public class TransactionList implements CompositeTransaction {
                 .toList();
     }
 
+    /**
+     * Filter by min amount list.
+     *
+     * @param min the min
+     * @return the list
+     */
     public List<AbstractTransaction> filterByMinAmount(double min) {
         return transactionList.stream()
                 .filter(t -> t instanceof AbstractTransaction tx && tx.getAmount() >= min)

@@ -5,7 +5,7 @@ import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.model.account.*;
 
 public class AccountFactory {
-    public static AbstractAccount createAccount(AccounType type, String name, double balance) throws Exception {
+    public static AbstractAccount createAccount(AccounType type, String name, double balance) {
         return switch (type) {
             case BANK -> new BankAccount(name, balance);
             case CASH -> new CashAccount(name, balance);

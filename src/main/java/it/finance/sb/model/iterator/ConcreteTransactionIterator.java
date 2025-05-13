@@ -7,11 +7,19 @@ import it.finance.sb.model.transaction.AbstractTransaction;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+/**
+ * The type Concrete transaction iterator.
+ */
 public class ConcreteTransactionIterator implements TransactionIterator {
     private final List<CompositeTransaction> transactions;
     private int currentIndex = 0;
     private int lastReturnedIndex = -1;
 
+    /**
+     * Instantiates a new Concrete transaction iterator.
+     *
+     * @param transactions the transactions
+     */
     public ConcreteTransactionIterator(List<CompositeTransaction> transactions) {
         this.transactions = transactions;
     }

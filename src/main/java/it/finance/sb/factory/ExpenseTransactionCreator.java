@@ -7,6 +7,9 @@ import it.finance.sb.model.transaction.IncomeTransaction;
 
 import java.util.Date;
 
+/**
+ * The type Expense transaction creator.
+ */
 public class ExpenseTransactionCreator implements TransactionCreator {
     @Override
     public AbstractTransaction create(double amount,String category, String reason, Date date, AbstractAccount to, AbstractAccount from) {

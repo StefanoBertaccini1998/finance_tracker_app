@@ -1,7 +1,6 @@
 package it.finance.sb.service;
 
 import it.finance.sb.logging.LoggerFactory;
-import it.finance.sb.model.account.AbstractAccount;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
@@ -12,10 +11,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class UserService implements InterfaceService<User> {
+/**
+ * The type User service.
+ */
+public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
 
+    /**
+     * Create user.
+     *
+     * @param name   the name
+     * @param age    the age
+     * @param gender the gender
+     * @return the user
+     */
     public User create(String name, int age, Gender gender) {
         logger.info("[UserService] Created user '" + name + "' age=" + age + ", gender=" + gender);
         User user = new User(name, age, gender);
@@ -23,11 +33,26 @@ public class UserService implements InterfaceService<User> {
         return user;
     }
 
+    /**
+     * Delete user.
+     *
+     * @param user the user
+     * @return the user
+     */
     public User delete(User user) {
         logger.info("[UserService] Deleted user '" + user.getName() + "'");
         return user;
     }
 
+    /**
+     * Modify user.
+     *
+     * @param user      the user
+     * @param newName   the new name
+     * @param newAge    the new age
+     * @param newGender the new gender
+     * @return the user
+     */
     public User modify(User user, String newName, Integer newAge, Gender newGender) {
         if (newName != null && !newName.trim().isEmpty()) user.setName(newName);
         if (newAge != null && newAge > 0) user.setAge(newAge);
@@ -37,6 +62,11 @@ public class UserService implements InterfaceService<User> {
         return user;
     }
 
+    /**
+     * Display all account balances.
+     *
+     * @param user the user
+     */
     public void displayAllAccountBalances(User user) {
         logger.info("[UserService] Showing all balances for user '" + user.getName() + "'");
         Map<String, Double> balances = user.getAllAccountBalances();
@@ -44,7 +74,9 @@ public class UserService implements InterfaceService<User> {
     }
 
     /**
-     * @param user
+     * Display all transactions.
+     *
+     * @param user the user
      */
     public void displayAllTransactions(User user) {
         logger.info("[UserService] Showing all transactions for user '" + user.getName() + "'");
@@ -57,6 +89,12 @@ public class UserService implements InterfaceService<User> {
         });
     }
 
+    /**
+     * Add category.
+     *
+     * @param user     the user
+     * @param category the category
+     */
     public void addCategory(User user, String category) {
         if (category == null || category.isBlank()) {
             logger.warning("[UserService] Rejected blank category");

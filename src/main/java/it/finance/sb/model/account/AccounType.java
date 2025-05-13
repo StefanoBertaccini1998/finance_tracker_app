@@ -1,5 +1,19 @@
 package it.finance.sb.model.account;
 
+/**
+ * The enum Accoun type.
+ */
 public enum AccounType {
-    BANK,INVESTMENTS,CASH
+    /**
+     * Bank accoun type.
+     */
+    BANK,
+    /**
+     * Investments accoun type.
+     */
+    INVESTMENTS,
+    /**
+     * Cash accoun type.
+     */
+    CASH
 }

@@ -4,29 +4,62 @@ import it.finance.sb.model.account.AbstractAccount;
 
 import java.util.Date;
 
+/**
+ * The type Movement transaction.
+ */
 public class MovementTransaction extends AbstractTransaction {
 
     private AbstractAccount toAccount;
     private AbstractAccount fromAccount;
 
+    /**
+     * Instantiates a new Movement transaction.
+     *
+     * @param amount      the amount
+     * @param category    the category
+     * @param reason      the reason
+     * @param date        the date
+     * @param toAccount   the to account
+     * @param fromAccount the from account
+     */
     public MovementTransaction(double amount, String category, String reason, Date date, AbstractAccount toAccount, AbstractAccount fromAccount) {
         super(amount, category, reason, date, TransactionType.MOVEMENT);
         this.toAccount = toAccount;
         this.fromAccount = fromAccount;
     }
 
+    /**
+     * Gets to account.
+     *
+     * @return the to account
+     */
     public AbstractAccount getToAccount() {
         return toAccount;
     }
 
+    /**
+     * Sets to account.
+     *
+     * @param toAccount the to account
+     */
     public void setToAccount(AbstractAccount toAccount) {
         this.toAccount = toAccount;
     }
 
+    /**
+     * Gets from account.
+     *
+     * @return the from account
+     */
     public AbstractAccount getFromAccount() {
         return fromAccount;
     }
 
+    /**
+     * Sets from account.
+     *
+     * @param fromAccount the from account
+     */
     public void setFromAccount(AbstractAccount fromAccount) {
         this.fromAccount = fromAccount;
     }
@@ -40,6 +73,20 @@ public class MovementTransaction extends AbstractTransaction {
     public double getTotal() {
 
         return amount;
+    }
+
+    @Override
+    public String toCsv() {
+        return String.join(",", String.valueOf(transactionId), String.valueOf(amount),
+                reason, String.valueOf(date.getTime()), type.name(), toAccount.getAccountId()+"", fromAccount.getAccountId()+"", category);
+    }
+
+    public static MovementTransaction fromCsv(String[] fields, AbstractAccount to, AbstractAccount from) throws Exception {
+        double amount = Double.parseDouble(fields[1]);
+        String reason = fields[2];
+        Date date = new Date(Long.parseLong(fields[3]));
+        String category = fields.length > 6 ? fields[6] : "Uncategorized";
+        return new MovementTransaction(amount,category, reason, date, to,from);
     }
 
 }

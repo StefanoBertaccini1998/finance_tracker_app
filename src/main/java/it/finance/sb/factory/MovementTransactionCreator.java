@@ -7,6 +7,9 @@ import it.finance.sb.model.transaction.MovementTransaction;
 
 import java.util.Date;
 
+/**
+ * The type Movement transaction creator.
+ */
 public class MovementTransactionCreator implements TransactionCreator {
     @Override
     public AbstractTransaction create(double amount, String category, String reason, Date date, AbstractAccount to, AbstractAccount from) {

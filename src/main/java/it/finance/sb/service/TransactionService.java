@@ -14,15 +14,36 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TransactionService implements InterfaceService<AbstractTransaction> {
+/**
+ * The type Transaction service.
+ */
+public class TransactionService {
 
     private final User user;
     private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
 
+    /**
+     * Instantiates a new Transaction service.
+     *
+     * @param user the user
+     */
     public TransactionService(User user) {
         this.user = user;
     }
 
+    /**
+     * Create abstract transaction.
+     *
+     * @param type        the type
+     * @param amount      the amount
+     * @param category    the category
+     * @param reason      the reason
+     * @param date        the date
+     * @param toAccount   the to account
+     * @param fromAccount the from account
+     * @return the abstract transaction
+     * @throws TransactionOperationException the transaction operation exception
+     */
     public AbstractTransaction create(TransactionType type, double amount, String category, String reason, Date date,
                                       AbstractAccount toAccount, AbstractAccount fromAccount) throws TransactionOperationException {
         try {
@@ -74,6 +95,13 @@ public class TransactionService implements InterfaceService<AbstractTransaction>
         }
     }
 
+    /**
+     * Delete abstract transaction.
+     *
+     * @param transaction the transaction
+     * @return the abstract transaction
+     * @throws TransactionOperationException the transaction operation exception
+     */
     public AbstractTransaction delete(AbstractTransaction transaction) throws TransactionOperationException {
         if (transaction == null) {
             throw new TransactionOperationException("Cannot delete a null transaction.");
@@ -106,6 +134,19 @@ public class TransactionService implements InterfaceService<AbstractTransaction>
         }
     }
 
+    /**
+     * Modify abstract transaction.
+     *
+     * @param original    the original
+     * @param newAmount   the new amount
+     * @param newCategory the new category
+     * @param newReason   the new reason
+     * @param newDate     the new date
+     * @param newTo       the new to
+     * @param newFrom     the new from
+     * @return the abstract transaction
+     * @throws TransactionOperationException the transaction operation exception
+     */
     public AbstractTransaction modify(AbstractTransaction original,
                                       double newAmount,
                                       String newCategory,
@@ -168,6 +209,11 @@ public class TransactionService implements InterfaceService<AbstractTransaction>
         }
     }
 
+    /**
+     * Remove transactions for account.
+     *
+     * @param accountToDelete the account to delete
+     */
     public void removeTransactionsForAccount(AbstractAccount accountToDelete) {
         for (TransactionType type : user.getTransactionLists().keySet()) {
             TransactionList list = user.getTransactionLists().get(type);

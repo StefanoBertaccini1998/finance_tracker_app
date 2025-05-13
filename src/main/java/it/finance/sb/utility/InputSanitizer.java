@@ -5,8 +5,16 @@ import it.finance.sb.exception.DataValidationException;
 
 import java.lang.reflect.Field;
 
+/**
+ * The type Input sanitizer.
+ */
 public class InputSanitizer {
 
+    /**
+     * Validate.
+     *
+     * @param obj the obj
+     */
     public static void validate(Object obj) {
         for (Field field : obj.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(Sanitize.class)) {
