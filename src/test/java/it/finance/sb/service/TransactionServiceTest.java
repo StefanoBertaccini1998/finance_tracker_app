@@ -1,7 +1,7 @@
 package it.finance.sb.service;
 
-import it.finance.sb.model.account.AbstractAccount;
 import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
@@ -18,15 +18,17 @@ class TransactionServiceTest {
     private AccountService accountService;
     private User user;
 
-    private AbstractAccount acc1;
-    private AbstractAccount acc2;
+    private AccountInterface acc1;
+    private AccountInterface acc2;
 
     @BeforeEach
     void setUp() throws Exception {
         user = new User("TestUser",99, Gender.OTHER);
 
-        transactionService = new TransactionService(user);
-        accountService = new AccountService(user,transactionService);
+        transactionService = new TransactionService();
+        transactionService.setCurrentUser(user);
+        accountService = new AccountService(transactionService);
+        accountService.setCurrentUser(user);
 
         acc1 = accountService.create(AccounType.BANK, "Main", 1000.0);
         acc2 = accountService.create(AccounType.BANK, "Savings", 500.0);

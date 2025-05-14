@@ -1,6 +1,6 @@
 package it.finance.sb.factory;
 
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 
 import java.util.Date;
@@ -20,5 +20,5 @@ public interface TransactionCreator {
      * @param from     the from
      * @return the abstract transaction
      */
-    AbstractTransaction create(double amount,String category, String reason, Date date, AbstractAccount to, AbstractAccount from);
+    AbstractTransaction create(double amount, String category, String reason, Date date, AccountInterface to, AccountInterface from);
 }

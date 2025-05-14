@@ -1,7 +1,8 @@
 package it.finance.sb.service;
 
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
@@ -25,10 +26,12 @@ class UserServiceTest {
     void setUp() throws Exception {
         userService = new UserService();
         user = userService.create("Alice", 30, Gender.FEMALE);
-        transactionService = new TransactionService(user);
-        accountService = new AccountService(user,transactionService);
+        transactionService = new TransactionService();
+        transactionService.setCurrentUser(user);
 
-        AbstractAccount acc = accountService.create(AccounType.BANK, "Main", 1000);
+        accountService = new AccountService(transactionService);
+        accountService.setCurrentUser(user);
+        AccountInterface acc = accountService.create(AccounType.BANK, "Main", 1000.0);
         transactionService.create(TransactionType.INCOME, 200, "Bonus","Category", new Date(), acc, null);
     }
 
@@ -40,7 +43,7 @@ class UserServiceTest {
     }
 
     @Test
-    void testModifyUser() {
+    void testModifyUser() throws DataValidationException {
         userService.modify(user, "Alice Smith", 31, Gender.FEMALE);
         assertEquals("Alice Smith", user.getName());
         assertEquals(31, user.getAge());

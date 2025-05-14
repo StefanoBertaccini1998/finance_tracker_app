@@ -1,31 +1,33 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.AccountOperationException;
+import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.logging.LoggerFactory;
-import it.finance.sb.model.account.AbstractAccount;
 import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.user.User;
 import it.finance.sb.utility.InputSanitizer;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
  * The type Account service.
  */
-public class AccountService {
-    private User user;
+public class AccountService extends BaseService {
+
+    private final Map<Integer, AccountInterface> accounts = new HashMap<>();
     private final TransactionService transactionService;
-    private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
 
     /**
      * Instantiates a new Account service.
      *
-     * @param user               the user
      * @param transactionService the transaction service
      */
-    public AccountService(User user, TransactionService transactionService) {
-        this.user = user;
+    public AccountService(TransactionService transactionService) {
         this.transactionService = transactionService;
     }
 
@@ -38,11 +40,15 @@ public class AccountService {
      * @return the abstract account
      * @throws Exception the exception
      */
-//TODO CREATE ACCOUNT
-    public AbstractAccount create(AccounType type, String name, double balance) throws Exception {
-        AbstractAccount accountCreated = AccountFactory.createAccount(type, name, balance);
+    public AccountInterface create(AccounType type, String name, Double balance) throws Exception {
+        requireLoggedInUser();
+
+        //Create account using factory
+        AccountInterface accountCreated = AccountFactory.createAccount(type, name, balance);
+        //Sanitize the object
         InputSanitizer.validate(accountCreated);
-        user.addAccount(accountCreated);
+        //Add to the current user context the account created
+        currentUser.getAccountList().add(accountCreated);
         logger.info("[AccountService] Created account '" + name + "' with balance " + balance);
         return accountCreated;
     }
@@ -53,8 +59,8 @@ public class AccountService {
      * @param account the account
      * @return the abstract account
      */
-//TODO DELETE ACCOUNT
-    public AbstractAccount delete(AbstractAccount account) {
+    public AccountInterface delete(AccountInterface account) throws AccountOperationException {
+        requireLoggedInUser();
         if (account == null) {
             throw new AccountOperationException("Cannot delete a null account.");
         }
@@ -63,7 +69,7 @@ public class AccountService {
         transactionService.removeTransactionsForAccount(account);
 
         // Remove account from user
-        user.getAccountList().remove(account);
+        currentUser.getAccountList().remove(account);
         logger.info("[AccountService] Deleted account ID=" + account.getAccountId());
         return account;
     }
@@ -71,29 +77,28 @@ public class AccountService {
     /**
      * Modify abstract account.
      *
-     * @param id         the id
+     * @param account    the account
+     * @param type       the account type
      * @param newName    the new name
      * @param newBalance the new balance
      * @return the abstract account
      */
-//TODO MODIFY account its ok for now I likt it. We can further improve the exception handling with exception custom
-    public AbstractAccount modify(int id, String newName, Double newBalance) {
-        AbstractAccount account = user.getAccountList().stream()
-                .filter(a -> a.getAccountId() == id)
-                .findFirst()
-                .orElseThrow(() -> new AccountOperationException("Account ID not found"));
+    public AccountInterface modify(AccountInterface account, AccounType type, String newName, Double newBalance) throws Exception {
+        requireLoggedInUser();
 
         if (newName != null && !newName.trim().isEmpty()) {
             account.setName(newName);
+        }
+        if (type != null) {
+            account.setType(type);
         }
         if (newBalance != null && newBalance >= 0) {
             account.setDeposit(newBalance);
         }
         InputSanitizer.validate(account);
-        logger.info("[AccountService] Modified account ID=" + id + " -> name: " + newName + ", balance: " + newBalance);
+        logger.info("[AccountService] Modified account " + account + " = -> name: " + newName + ", balance: " + newBalance);
         return account;
     }
-
 
     //TODO SUGGESTION
 }

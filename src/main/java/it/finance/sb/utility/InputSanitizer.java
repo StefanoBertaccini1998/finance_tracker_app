@@ -8,7 +8,7 @@ import java.util.Date;
 
 public class InputSanitizer {
 
-    public static void validate(Object obj) {
+    public static void validate(Object obj) throws DataValidationException {
         for (Field field : obj.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(Sanitize.class)) {
                 field.setAccessible(true);

@@ -1,7 +1,7 @@
 package it.finance.sb.model.user;
 
 import it.finance.sb.annotation.Sanitize;
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
@@ -17,7 +17,7 @@ public class User {
     private int age;
     private Gender gender;
     private Map<TransactionType, TransactionList> transactionsMap;
-    private List<AbstractAccount> accountList;
+    private List<AccountInterface> accountList;
     private Set<String> categorySet;
 
     /**
@@ -112,7 +112,7 @@ public class User {
      *
      * @return the account list
      */
-    public List<AbstractAccount> getAccountList() {
+    public List<AccountInterface> getAccountList() {
         return accountList;
     }
 
@@ -121,7 +121,7 @@ public class User {
      *
      * @param accountList the account list
      */
-    public void setAccountList(List<AbstractAccount> accountList) {
+    public void setAccountList(List<AccountInterface> accountList) {
         this.accountList = accountList;
     }
 
@@ -130,7 +130,7 @@ public class User {
      *
      * @param account the account
      */
-    public void addAccount(AbstractAccount account) {
+    public void addAccount(AccountInterface account) {
         this.accountList.add(account);
     }
 
@@ -167,7 +167,7 @@ public class User {
      *
      * @param account the account
      */
-    public void updateAccount(AbstractAccount account){
+    public void updateAccount(AccountInterface account){
 
     }
 
@@ -178,7 +178,7 @@ public class User {
      */
     public Map<String, Double> getAllAccountBalances() {
         Map<String, Double> result = new HashMap<>();
-        for (AbstractAccount account : accountList) {
+        for (AccountInterface account : accountList) {
             result.put(account.getName(), account.getBalance());
         }
         return result;

@@ -1,7 +1,7 @@
 package it.finance.sb;
 
-import it.finance.sb.model.account.AbstractAccount;
 import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
@@ -21,25 +21,25 @@ public class main {
         User user = userService.create("Stefano", 26, Gender.MALE);
 
         //Create Services
-        TransactionService transactionService = new TransactionService(user);
-        AccountService accountService = new AccountService(user,transactionService);
+        TransactionService transactionService = new TransactionService();
+        AccountService accountService = new AccountService(transactionService);
 
         //Create Account
-        AbstractAccount bper = accountService.create(AccounType.BANK, "Banca BPER", 2000);
-        AbstractAccount bper2 = accountService.create(AccounType.BANK, "Banca BPER", 2000);
-        AbstractAccount cash = accountService.create(AccounType.CASH, "Monete", 100);
+        AccountInterface bper = accountService.create(AccounType.BANK, "Banca BPER", 2000.0);
+        AccountInterface bper2 = accountService.create(AccounType.BANK, "Banca BPER", 2000.0);
+        AccountInterface cash = accountService.create(AccounType.CASH, "Monete", 100.0);
 
         //Create Transaction
-        AbstractTransaction rendimento =transactionService.create(TransactionType.INCOME,50,"Rendimento","Rendimento", new Date(),bper,null);
-        AbstractTransaction rendimento2 = transactionService.create(TransactionType.INCOME, 50, "Rendimento2","Rendimento", new Date(), bper, null);
-        AbstractTransaction spesa =transactionService.create(TransactionType.EXPENSE,200,"spesa","spesa", new Date(),null,bper);
-        AbstractTransaction spesa2= transactionService.create(TransactionType.EXPENSE,200,"spesa2","spesa", new Date(),null,bper);
-        AbstractTransaction video= transactionService.create(TransactionType.MOVEMENT,200,"Ritiro videogiochi","spesa", new Date(),cash,bper);
-        AbstractTransaction video2 =transactionService.create(TransactionType.MOVEMENT,200,"Ritiro videogiochi2","spesa", new Date(),cash,bper);
+        AbstractTransaction rendimento = transactionService.create(TransactionType.INCOME, 50, "Rendimento", "Rendimento", new Date(), bper, null);
+        AbstractTransaction rendimento2 = transactionService.create(TransactionType.INCOME, 50, "Rendimento2", "Rendimento", new Date(), bper, null);
+        AbstractTransaction spesa = transactionService.create(TransactionType.EXPENSE, 200, "spesa", "spesa", new Date(), null, bper);
+        AbstractTransaction spesa2 = transactionService.create(TransactionType.EXPENSE, 200, "spesa2", "spesa", new Date(), null, bper);
+        AbstractTransaction video = transactionService.create(TransactionType.MOVEMENT, 200, "Ritiro videogiochi", "spesa", new Date(), cash, bper);
+        AbstractTransaction video2 = transactionService.create(TransactionType.MOVEMENT, 200, "Ritiro videogiochi2", "spesa", new Date(), cash, bper);
 
         //Modify Account
-        accountService.modify(bper.getAccountId(), "BPER", 2400.0);
-        accountService.modify(bper.getAccountId(), "BPER", 2400.0);
+        accountService.modify(bper, AccounType.CASH, "BPER", 2400.0);
+        accountService.modify(bper, AccounType.BANK, "BPER", 2400.0);
 
         //DELETE Account
         accountService.delete(bper2);

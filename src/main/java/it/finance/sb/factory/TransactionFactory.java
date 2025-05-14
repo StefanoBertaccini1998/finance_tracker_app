@@ -1,7 +1,7 @@
 package it.finance.sb.factory;
 
 import it.finance.sb.exception.TransactionOperationException;
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.*;
 
 import java.util.Date;
@@ -33,7 +33,7 @@ public class TransactionFactory {
      * @return the instance of the class AbstractTransaction
      *
      */
-    public static AbstractTransaction createTransaction(TransactionType type, double amount, String category, String reason, Date date, AbstractAccount to, AbstractAccount from) {
+    public static AbstractTransaction createTransaction(TransactionType type, double amount, String category, String reason, Date date, AccountInterface to, AccountInterface from) throws TransactionOperationException {
         TransactionCreator creator = creators.get(type);
         if (creator == null) throw new TransactionOperationException("Unsupported transaction type: " + type);
         return creator.create(amount, category, reason, date, to, from);

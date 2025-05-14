@@ -1,17 +1,15 @@
 package it.finance.sb.model.transaction;
 
-import it.finance.sb.exception.DataValidationException;
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.model.account.AccountInterface;
 
 import java.util.Date;
-import java.util.Map;
 
 /**
  * The type Income transaction.
  */
 public class IncomeTransaction extends AbstractTransaction {
 
-    private AbstractAccount toAccount;
+    private AccountInterface toAccount;
 
     /**
      * Instantiates a new Income transaction.
@@ -22,7 +20,7 @@ public class IncomeTransaction extends AbstractTransaction {
      * @param date      the date
      * @param toAccount the to account
      */
-    public IncomeTransaction(double amount, String category, String reason, Date date, AbstractAccount toAccount) {
+    public IncomeTransaction(double amount, String category, String reason, Date date, AccountInterface toAccount) {
         super(amount, category, reason, date, TransactionType.INCOME);
         this.toAccount = toAccount;
     }
@@ -32,7 +30,7 @@ public class IncomeTransaction extends AbstractTransaction {
      *
      * @return the to account
      */
-    public AbstractAccount getToAccount() {
+    public AccountInterface getToAccount() {
         return toAccount;
     }
 
@@ -41,7 +39,7 @@ public class IncomeTransaction extends AbstractTransaction {
      *
      * @param toAccount the to account
      */
-    public void setToAccount(AbstractAccount toAccount) {
+    public void setToAccount(AccountInterface toAccount) {
         this.toAccount = toAccount;
     }
 
@@ -60,7 +58,7 @@ public class IncomeTransaction extends AbstractTransaction {
         return formatCsvLine(null, toAccount.getName(), category, reason, date.getTime());
     }
 
-    public static IncomeTransaction fromCsv(String[] fields, AbstractAccount to) {
+    public static IncomeTransaction fromCsv(String[] fields, AccountInterface to) {
         double amount = Double.parseDouble(fields[2]);
         String category = fields[5];
         String reason = fields[6];

@@ -1,8 +1,10 @@
 package it.finance.sb.io;
 
 import it.finance.sb.exception.DataValidationException;
-import it.finance.sb.model.account.AbstractAccount;
-import it.finance.sb.model.account.BankAccount;
+import it.finance.sb.factory.AccountFactory;
+import it.finance.sb.factory.TransactionFactory;
+import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.*;
 import it.finance.sb.utility.InputSanitizer;
 
@@ -16,11 +18,11 @@ public class CsvTransactionImporter {
 
     public static List<AbstractTransaction> importTransactions(
             Path inputFile,
-            Map<String, AbstractAccount> accountMap,
+            Map<String, AccountInterface> accountMap,
             boolean autoCreateMissingAccounts,
             boolean skipBadLines,
             List<String> errorLog
-    ) throws IOException {
+    ) throws IOException, DataValidationException {
         if (!Files.exists(inputFile) || !Files.isRegularFile(inputFile)) {
             throw new IOException("Input file not found or invalid.");
         }
@@ -57,16 +59,16 @@ public class CsvTransactionImporter {
                     String reason = fields[6].trim();
                     Date date = new Date(Long.parseLong(fields[7].trim()));
 
-                    AbstractAccount from = fromName.isEmpty() ? null : accountMap.get(fromName);
-                    AbstractAccount to = toName.isEmpty() ? null : accountMap.get(toName);
+                    AccountInterface from = fromName.isEmpty() ? null : accountMap.get(fromName);
+                    AccountInterface to = toName.isEmpty() ? null : accountMap.get(toName);
 
                     // Auto-create if enabled
                     if (from == null && !fromName.isEmpty() && autoCreateMissingAccounts) {
-                        from = new BankAccount(fromName, 0);
+                        from = AccountFactory.createAccount(AccounType.BANK,fromName,0);
                         accountMap.put(fromName, from);
                     }
                     if (to == null && !toName.isEmpty() && autoCreateMissingAccounts) {
-                        to = new BankAccount(toName, 0);
+                        to = AccountFactory.createAccount(AccounType.BANK,toName,0);
                         accountMap.put(toName, to);
                     }
 
@@ -82,13 +84,9 @@ public class CsvTransactionImporter {
                     if (type == TransactionType.MOVEMENT && (from == null || to == null))
                         throw new DataValidationException("Missing accounts for MOVEMENT");
 
-                    AbstractTransaction tx = switch (type) {
-                        case INCOME -> new IncomeTransaction(amount, category, reason, date, to);
-                        case EXPENSE -> new ExpenseTransaction(amount, category, reason, date, from);
-                        case MOVEMENT -> new MovementTransaction(amount, category, reason, date, to, from);
-                    };
-                    InputSanitizer.validate(tx);
-                    transactions.add(tx);
+                    AbstractTransaction transaction = TransactionFactory.createTransaction(type,amount,category,reason,date,to,from);
+                    InputSanitizer.validate(transaction);
+                    transactions.add(transaction);
 
                 } catch (Exception e) {
                     String error = "[Line " + lineNum + "] " + e.getMessage();

@@ -3,7 +3,7 @@ package it.finance.sb.exception;
 /**
  * Custom exception for operation in TransactionService error
  */
-public class TransactionOperationException extends RuntimeException {
+public class TransactionOperationException extends Exception {
     public TransactionOperationException(String message) {
         super(message);
     }

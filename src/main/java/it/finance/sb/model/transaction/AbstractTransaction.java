@@ -20,11 +20,12 @@ public abstract class AbstractTransaction implements CompositeTransaction, CsvSe
     /**
      * The Amount.
      */
+    @Sanitize(positiveNumber = true)
     protected double amount;
     /**
      * The Reason.
      */
-    @Sanitize(notBlank = false, maxLength = 50)
+    @Sanitize(maxLength = 50)
     protected String reason;
     /**
      * The Date.

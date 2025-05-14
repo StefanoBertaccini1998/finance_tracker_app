@@ -1,7 +1,7 @@
 package it.finance.sb.model.transaction;
 
 
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.model.account.AccountInterface;
 
 import java.util.Date;
 
@@ -10,7 +10,7 @@ import java.util.Date;
  */
 public class ExpenseTransaction extends AbstractTransaction {
 
-    private AbstractAccount fromAccount;
+    private AccountInterface fromAccount;
 
     /**
      * Instantiates a new Expense transaction.
@@ -21,7 +21,7 @@ public class ExpenseTransaction extends AbstractTransaction {
      * @param date        the date
      * @param fromAccount the from account
      */
-    public ExpenseTransaction(double amount, String category, String reason, Date date, AbstractAccount fromAccount) {
+    public ExpenseTransaction(double amount, String category, String reason, Date date, AccountInterface fromAccount) {
         super(amount, category, reason, date, TransactionType.EXPENSE);
         this.fromAccount = fromAccount;
     }
@@ -31,7 +31,7 @@ public class ExpenseTransaction extends AbstractTransaction {
      *
      * @return the from account
      */
-    public AbstractAccount getFromAccount() {
+    public AccountInterface getFromAccount() {
         return fromAccount;
     }
 
@@ -40,7 +40,7 @@ public class ExpenseTransaction extends AbstractTransaction {
      *
      * @param fromAccount the from account
      */
-    public void setFromAccount(AbstractAccount fromAccount) {
+    public void setFromAccount(AccountInterface fromAccount) {
         this.fromAccount = fromAccount;
     }
 
@@ -59,7 +59,7 @@ public class ExpenseTransaction extends AbstractTransaction {
         return formatCsvLine(fromAccount.getName(), null, category, reason, date.getTime());
     }
 
-    public static ExpenseTransaction fromCsv(String[] fields, AbstractAccount from) throws Exception {
+    public static ExpenseTransaction fromCsv(String[] fields, AccountInterface from) throws Exception {
         double amount = Double.parseDouble(fields[2]);
         String category = fields[5];
         String reason = fields[6];

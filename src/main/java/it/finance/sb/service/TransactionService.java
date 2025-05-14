@@ -3,7 +3,7 @@ package it.finance.sb.service;
 import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.logging.LoggerFactory;
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.iterator.TransactionIterator;
 import it.finance.sb.model.transaction.*;
@@ -17,18 +17,15 @@ import java.util.logging.Logger;
 /**
  * The type Transaction service.
  */
-public class TransactionService {
+public class TransactionService extends BaseService{
 
-    private final User user;
     private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
 
     /**
      * Instantiates a new Transaction service.
      *
-     * @param user the user
      */
-    public TransactionService(User user) {
-        this.user = user;
+    public TransactionService() {
     }
 
     /**
@@ -45,7 +42,8 @@ public class TransactionService {
      * @throws TransactionOperationException the transaction operation exception
      */
     public AbstractTransaction create(TransactionType type, double amount, String category, String reason, Date date,
-                                      AbstractAccount toAccount, AbstractAccount fromAccount) throws TransactionOperationException {
+                                      AccountInterface toAccount, AccountInterface fromAccount) throws TransactionOperationException {
+        requireLoggedInUser();
         try {
             if (amount <= 0) {
                 logger.warning("Attempted to create transaction with non-positive amount.");
@@ -81,7 +79,7 @@ public class TransactionService {
 
             AbstractTransaction transaction = TransactionFactory.createTransaction(type, amount, reason,category, date, toAccount, fromAccount);
             InputSanitizer.validate(transaction);
-            user.addTransaction(transaction);
+            getCurrentUser().addTransaction(transaction);
 
             logger.info("[TransactionService] Created " + type + " transaction: ID=" + transaction.getTransactionId() + ", amount=" + amount);
             return transaction;
@@ -103,6 +101,7 @@ public class TransactionService {
      * @throws TransactionOperationException the transaction operation exception
      */
     public AbstractTransaction delete(AbstractTransaction transaction) throws TransactionOperationException {
+        requireLoggedInUser();
         if (transaction == null) {
             throw new TransactionOperationException("Cannot delete a null transaction.");
         }
@@ -122,7 +121,7 @@ public class TransactionService {
                 default -> throw new TransactionOperationException("Unsupported transaction type: " + type);
             }
 
-            TransactionList list = user.getTransactionLists().get(type);
+            TransactionList list = getCurrentUser().getTransactionLists().get(type);
             if (list != null) list.remove(transaction);
 
             logger.info("[TransactionService] Deleted transaction ID=" + transaction.getTransactionId() + ", type=" + transaction.getType());
@@ -152,8 +151,8 @@ public class TransactionService {
                                       String newCategory,
                                       String newReason,
                                       Date newDate,
-                                      AbstractAccount newTo,
-                                      AbstractAccount newFrom) throws TransactionOperationException {
+                                      AccountInterface newTo,
+                                      AccountInterface newFrom) throws TransactionOperationException {
         if (original == null || newAmount <= 0) {
             throw new TransactionOperationException("Invalid transaction input.");
         }
@@ -195,7 +194,7 @@ public class TransactionService {
             AbstractTransaction updated = TransactionFactory.createTransaction(type, newAmount, newCategory, newReason, newDate, newTo, newFrom);
             InputSanitizer.validate(updated);
 
-            TransactionList list = user.getTransactionLists().get(type);
+            TransactionList list = getCurrentUser().getTransactionLists().get(type);
             list.remove(original);
             list.addTransaction(updated);
 
@@ -214,9 +213,9 @@ public class TransactionService {
      *
      * @param accountToDelete the account to delete
      */
-    public void removeTransactionsForAccount(AbstractAccount accountToDelete) {
-        for (TransactionType type : user.getTransactionLists().keySet()) {
-            TransactionList list = user.getTransactionLists().get(type);
+    public void removeTransactionsForAccount(AccountInterface accountToDelete) {
+        for (TransactionType type : getCurrentUser().getTransactionLists().keySet()) {
+            TransactionList list = getCurrentUser().getTransactionLists().get(type);
             TransactionIterator iterator = list.iterator();
 
             while (iterator.hasNext()) {

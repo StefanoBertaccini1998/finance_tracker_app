@@ -1,6 +1,6 @@
 package it.finance.sb.model.transaction;
 
-import it.finance.sb.model.account.AbstractAccount;
+import it.finance.sb.model.account.AccountInterface;
 
 import java.util.Date;
 
@@ -9,8 +9,8 @@ import java.util.Date;
  */
 public class MovementTransaction extends AbstractTransaction {
 
-    private AbstractAccount toAccount;
-    private AbstractAccount fromAccount;
+    private AccountInterface toAccount;
+    private AccountInterface fromAccount;
 
     /**
      * Instantiates a new Movement transaction.
@@ -22,7 +22,7 @@ public class MovementTransaction extends AbstractTransaction {
      * @param toAccount   the to account
      * @param fromAccount the from account
      */
-    public MovementTransaction(double amount, String category, String reason, Date date, AbstractAccount toAccount, AbstractAccount fromAccount) {
+    public MovementTransaction(double amount, String category, String reason, Date date, AccountInterface toAccount, AccountInterface fromAccount) {
         super(amount, category, reason, date, TransactionType.MOVEMENT);
         this.toAccount = toAccount;
         this.fromAccount = fromAccount;
@@ -33,7 +33,7 @@ public class MovementTransaction extends AbstractTransaction {
      *
      * @return the to account
      */
-    public AbstractAccount getToAccount() {
+    public AccountInterface getToAccount() {
         return toAccount;
     }
 
@@ -42,7 +42,7 @@ public class MovementTransaction extends AbstractTransaction {
      *
      * @param toAccount the to account
      */
-    public void setToAccount(AbstractAccount toAccount) {
+    public void setToAccount(AccountInterface toAccount) {
         this.toAccount = toAccount;
     }
 
@@ -51,7 +51,7 @@ public class MovementTransaction extends AbstractTransaction {
      *
      * @return the from account
      */
-    public AbstractAccount getFromAccount() {
+    public AccountInterface getFromAccount() {
         return fromAccount;
     }
 
@@ -60,7 +60,7 @@ public class MovementTransaction extends AbstractTransaction {
      *
      * @param fromAccount the from account
      */
-    public void setFromAccount(AbstractAccount fromAccount) {
+    public void setFromAccount(AccountInterface fromAccount) {
         this.fromAccount = fromAccount;
     }
 
@@ -80,7 +80,7 @@ public class MovementTransaction extends AbstractTransaction {
         return formatCsvLine(fromAccount.getName(), toAccount.getName(), category, reason, date.getTime());
     }
 
-    public static MovementTransaction fromCsv(String[] fields, AbstractAccount to, AbstractAccount from) {
+    public static MovementTransaction fromCsv(String[] fields, AccountInterface to, AccountInterface from) {
         double amount = Double.parseDouble(fields[2]);
         String category = fields[5];
         String reason = fields[6];

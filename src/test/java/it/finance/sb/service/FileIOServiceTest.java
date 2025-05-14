@@ -1,11 +1,13 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.AccountOperationException;
+import it.finance.sb.exception.TransactionOperationException;
+import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.io.CsvTransactionImporter;
-import it.finance.sb.model.account.AbstractAccount;
-import it.finance.sb.model.account.BankAccount;
+import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.IncomeTransaction;
-import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
 import it.finance.sb.utility.InputSanitizer;
@@ -14,8 +16,6 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,11 +24,11 @@ public class FileIOServiceTest {
     @Test
     void testCsvParsingWithMixedValidLines_NoFile() throws Exception {
         User user = new User("NoFileUser", 30, Gender.OTHER);
-        AbstractAccount mainAcc = new BankAccount("MainAcc", 1000);
+        AccountInterface mainAcc =AccountFactory.createAccount(AccounType.BANK,"MainAcc", 1000);
         user.addAccount(mainAcc);
 
         // Account map used for resolving names
-        Map<String, AbstractAccount> accountMap = new HashMap<>();
+        Map<String, AccountInterface> accountMap = new HashMap<>();
         accountMap.put(mainAcc.getName(), mainAcc);
 
         List<String> csvLines = List.of(
@@ -51,7 +51,7 @@ public class FileIOServiceTest {
                 inlineToTempCsv(csvLines), accountMap, true, true, errors
         );
 
-        for (AbstractAccount acc : accountMap.values()) {
+        for (AccountInterface acc : accountMap.values()) {
             if (!user.getAccountList().contains(acc)) {
                 user.addAccount(acc);
             }
@@ -81,11 +81,11 @@ public class FileIOServiceTest {
     @Test
     void testCsvParsingWithMixedValidLines_falseAccount() throws Exception {
         User user = new User("NoFileUser", 30, Gender.OTHER);
-        AbstractAccount mainAcc = new BankAccount("MainAcc", 1000);
+        AccountInterface mainAcc =AccountFactory.createAccount(AccounType.BANK,"MainAcc", 1000);
         user.addAccount(mainAcc);
 
         // Account map used for resolving names
-        Map<String, AbstractAccount> accountMap = new HashMap<>();
+        Map<String, AccountInterface> accountMap = new HashMap<>();
         accountMap.put(mainAcc.getName(), mainAcc);
 
         List<String> csvLines = List.of(
@@ -108,7 +108,7 @@ public class FileIOServiceTest {
                 inlineToTempCsv(csvLines), accountMap, false, true, errors
         );
 
-        for (AbstractAccount acc : accountMap.values()) {
+        for (AccountInterface acc : accountMap.values()) {
             if (!user.getAccountList().contains(acc)) {
                 user.addAccount(acc);
             }
@@ -134,9 +134,9 @@ public class FileIOServiceTest {
     }
 
     @Test
-    void testExportAndReimportWithCsvFile() throws Exception {
+    void testExportAndReimportWithCsvFile() throws AccountOperationException, TransactionOperationException {
         User exportUser = new User("ExportUser", 25, Gender.MALE);
-        AbstractAccount acc = new BankAccount("ExportAccount", 1000);
+        AccountInterface acc =AccountFactory.createAccount(AccounType.BANK,"MainAcc", 1000);
         exportUser.addAccount(acc);
 
         for (int i = 0; i < 10; i++) {
@@ -151,14 +151,16 @@ public class FileIOServiceTest {
             exportUser.addCategory(tx.getCategory());
         }
 
-        FileIOService exportService = new FileIOService(exportUser);
+        FileIOService exportService = new FileIOService();
+        exportService.setCurrentUser(exportUser);
         Path path = Path.of("transactions_export_test.csv");
         exportService.exportTransactions(path);
 
         // Re-import into new user
         User importUser = new User("ImportUser", 31, Gender.FEMALE);
         importUser.addAccount(acc); // required for resolution
-        FileIOService importService = new FileIOService(importUser);
+        FileIOService importService = new FileIOService();
+        importService.setCurrentUser(importUser);
         importService.importTransactions(path, false, false);
 
         assertEquals(10, importUser.getAllTransactions().values().stream().mapToInt(List::size).sum());
