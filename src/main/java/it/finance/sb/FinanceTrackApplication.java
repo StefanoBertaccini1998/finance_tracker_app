@@ -2,6 +2,7 @@ package it.finance.sb;
 
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
+import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
@@ -9,9 +10,13 @@ import it.finance.sb.service.AccountService;
 import it.finance.sb.service.InvestmentService;
 import it.finance.sb.service.TransactionService;
 import it.finance.sb.service.UserService;
+import it.finance.sb.utility.ConsoleStyle;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Scanner;
+
+import static it.finance.sb.model.transaction.TransactionType.*;
 
 public class FinanceTrackApplication {
     private static User currentUser;
@@ -22,7 +27,7 @@ public class FinanceTrackApplication {
 
 
     public static void main(String[] args) {
-        System.out.println("Welcome to Simple Banking System!");
+        System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
         // For simplicity, we'll create a default user
         // In a real app, this would have proper authentication
         loginUser();
@@ -39,7 +44,7 @@ public class FinanceTrackApplication {
      */
     private static void loginUser() {
         currentUser = new User("Stefano", 29, Gender.OTHER);
-        System.out.println("Logged in as: " + currentUser.getName());
+        System.out.println(ConsoleStyle.info("Logged in as: ") + currentUser.getName());
 
         // Set the user in our services
         userService.setCurrentUser(currentUser);
@@ -56,11 +61,11 @@ public class FinanceTrackApplication {
         boolean running = true;
 
         while (running) {
-            System.out.println("\n===== MAIN MENU =====");
-            System.out.println("1. Manage Accounts");
-            System.out.println("2. Manage Transactions");
-            System.out.println("3. Investment Calculator");
-            System.out.println("4. Exit");
+            System.out.println(ConsoleStyle.menuTitle("Main Menu"));
+            System.out.println("1️⃣  Manage Accounts");
+            System.out.println("2️⃣  Manage Transactions");
+            System.out.println("3️⃣  Investment Calculator");
+            System.out.println("4️⃣  🚪 Exit");
             System.out.print("Select an option: ");
 
             String choice = scanner.nextLine();
@@ -103,6 +108,10 @@ public class FinanceTrackApplication {
             System.out.println("3. Update Account");
             System.out.println("4. Delete Account");
             System.out.println("5. Back to Main Menu");
+            System.out.println("1️⃣  View Accounts");
+            System.out.println("2️⃣  Create New Account");
+            System.out.println("3️⃣  Update Account");
+            System.out.println("4️⃣  Delete Account");
             System.out.print("Select an option: ");
 
             String choice = scanner.nextLine();
@@ -161,6 +170,9 @@ public class FinanceTrackApplication {
      */
     private static Double requestForAmount(Scanner scanner, String cliLog, boolean canEmpty) {
         System.out.print("\nEnter " + cliLog + ":");
+        if (canEmpty) {
+            System.out.println("\nPress Enter to leave empty.");
+        }
         double balance;
         try {
             balance = Double.parseDouble(scanner.nextLine());
@@ -180,16 +192,17 @@ public class FinanceTrackApplication {
     }
 
     private static AccounType requestForType(Scanner scanner, boolean canEmpty) {
-        if(canEmpty){
-            System.out.println("\nSelect account type or leave empty:");
-        }else{
-            System.out.println("\nSelect account type:");
-        }
+        System.out.println("\nSelect account type:");
+
 
         for (int i = 0; i < AccounType.values().length; i++) {
             System.out.println(i + 1 + ". " + AccounType.values()[i]);
         }
         System.out.print("Enter choice (1-" + AccounType.values().length + "): ");
+
+        if (canEmpty) {
+            System.out.println("Press Enter to leave empty.");
+        }
 
         AccounType type;
         String typeChoice = scanner.nextLine();
@@ -212,7 +225,7 @@ public class FinanceTrackApplication {
         System.out.println("\n===== DELETE ACCOUNT =====");
 
         //Get account recursively
-        AccountInterface account = getAccountId(scanner);
+        AccountInterface account = getAccountId(scanner, " ", false, null);
 
         try {
             AccountInterface accountInterface = accountService.delete(account);
@@ -223,68 +236,13 @@ public class FinanceTrackApplication {
     }
 
     /**
-     * Helper method to perform deposits and withdrawals
-     */
-    //TODO create the method to perform transaction
-    /*private static void performAccountTransaction(Scanner scanner, boolean isDeposit) {
-        String operation = isDeposit ? TransactionType.INCOME : TransactionType.EXPENSE;
-
-        if (currentUser.getAccountList().isEmpty()) {
-            System.out.println("You need to create an account first!");
-            return;
-        }
-
-        System.out.println("\n===== " + operation.toUpperCase() + " FUNDS =====");
-
-        // Display available accounts
-        userService.displayAllAccount();
-
-        System.out.print("Enter account ID: ");
-        int accountId;
-        try {
-            accountId = Integer.parseInt(scanner.nextLine()) - 1;
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid account ID. Please enter a number.");
-            return;
-        }
-
-        if (currentUser.getAccountList().get(accountId) == null) {
-            System.out.println("Account not found!");
-            return;
-        }
-
-        System.out.print("Enter amount to " + operation.toLowerCase() + ": ");
-        double amount;
-        try {
-            amount = Double.parseDouble(scanner.nextLine());
-            if (amount <= 0) {
-                System.out.println("Amount must be positive.");
-                return;
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid amount. Please enter a number.");
-            return;
-        }
-
-        try {
-            // For deposits, amount is positive; for withdrawals, amount is negative
-            double transactionAmount = isDeposit ? amount : -amount;
-            //
-            transactionService.create()
-            System.out.println(operation + " successful!");
-        } catch (Exception e) {
-            System.out.println("Error processing " + operation.toLowerCase() + ": " + e.getMessage());
-        }
-    }*/
-
-    /**
      * Helper method to perform update on account
      */
     private static void performAccountUpdate(Scanner scanner) {
 
         System.out.println("\n===== UPDATE ACCOUNT =====");
         //Get account recursively
-        AccountInterface account = getAccountId(scanner);
+        AccountInterface account = getAccountId(scanner, " ", false, null);
 
         System.out.print("Enter account name or leave empty: ");
         String possibleName = scanner.nextLine();
@@ -302,29 +260,38 @@ public class FinanceTrackApplication {
         }
     }
 
-    private static AccountInterface getAccountId(Scanner scanner) {
+    private static AccountInterface getAccountId(Scanner scanner, String cliLog, boolean canEmpty, AccountInterface accountInterface) {
         // Display available accounts
-        userService.displayAllAccount();
-
-        System.out.print("Enter account ID: ");
+        userService.displayAllAccount(accountInterface);
+        System.out.print("Enter" + cliLog + "account ID: ");
+        if (canEmpty) {
+            System.out.println("Press Enter to leave empty.");
+        }
         int accountId;
+        String input = "";
         try {
-            accountId = Integer.parseInt(scanner.nextLine()) - 1;
-        } catch (NumberFormatException e) {
+            input = scanner.nextLine();
+            accountId = Integer.parseInt(input) - 1;
+            //Check if the ID is different from the From account in Movement flow
+            if (accountInterface == currentUser.getAccountList().get(accountId)) {
+                throw new Exception("Account used as from account for Movement transaction");
+            }
+        } catch (Exception e) {
+            //If input is empty and canEmpty is true avoid recursive
+            if (input.isEmpty() && canEmpty) {
+                return null;
+            }
             System.out.println("Invalid account ID. Please enter a number.");
-            return getAccountId(scanner);
+            return getAccountId(scanner, cliLog, canEmpty, accountInterface);
         }
         try {
             return currentUser.getAccountList().get(accountId);
-
         } catch (IndexOutOfBoundsException e) {
             System.out.println("Account not found!");
-            return getAccountId(scanner);
+            return getAccountId(scanner, cliLog, canEmpty, accountInterface);
         }
-
     }
 
-    //TODO add check if account exist
     private static void showTransactionMenu() {
         Scanner scanner = new Scanner(System.in);
         boolean running = true;
@@ -342,15 +309,18 @@ public class FinanceTrackApplication {
 
             switch (choice) {
                 case "1":
-                    userService.displayAllTransactions();
+                    transactionService.displayAllTransactions();
                     break;
                 case "2":
                     createTransactionCLI(scanner);
                     break;
                 case "3":
-                    running = false;
+                    performTransactionUpdate(scanner);
                     break;
                 case "4":
+                    deleteTransaction(scanner);
+                    break;
+                case "5":
                     running = false;
                     break;
                 default:
@@ -361,95 +331,179 @@ public class FinanceTrackApplication {
 
     private static void createTransactionCLI(Scanner scanner) {
         System.out.println("\n===== ADD TRANSACTION =====");
-
-        System.out.println("Select type:");
-        System.out.println("1. INCOME");
-        System.out.println("2. EXPENSE");
-        System.out.println("3. MOVEMENT");
-
-        TransactionType type = null;
-        while (type == null) {
-            System.out.println("Select transaction type:");
-            System.out.println("1. INCOME");
-            System.out.println("2. EXPENSE");
-            System.out.println("3. MOVEMENT");
-            String input = scanner.nextLine();
-
-            switch (input) {
-                case "1" -> type = TransactionType.INCOME;
-                case "2" -> type = TransactionType.EXPENSE;
-                case "3" -> type = TransactionType.MOVEMENT;
-                default -> System.out.println("Invalid choice. Please enter 1, 2, or 3.");
-            }
-        }
-
-        System.out.print("Enter amount: ");
-        double amount;
-        try {
-            amount = Double.parseDouble(scanner.nextLine());
-            if (amount <= 0) {
-                System.out.println("Amount must be positive.");
-                return;
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid amount.");
-            return;
-        }
-
-        System.out.print("Enter category: ");
-        String category = scanner.nextLine();
-
+        //Request for type
+        TransactionType type = requestForTransactionType(scanner, false);
+        //Request amount
+        Double amount = requestForAmount(scanner, "Amount", false);
+        //Request category
+        String category = requestForCategory(scanner, false);
+        //Enter the reason
         System.out.print("Enter reason: ");
         String reason = scanner.nextLine();
 
-        AccountInterface from = null, to = null;
-
-        switch (type) {
-            case INCOME -> {
-                System.out.print("Enter TO Account ID: ");
-                int toId = Integer.parseInt(scanner.nextLine()) - 1;
-                to = currentUser.getAccountList().get(toId);
-                if (to == null) {
-                    System.out.println("Invalid account.");
-                    return;
-                }
-            }
-            case EXPENSE -> {
-                System.out.print("Enter FROM Account ID: ");
-                int fromId = Integer.parseInt(scanner.nextLine()) - 1;
-                from = currentUser.getAccountList().get(fromId);
-                if (from == null) {
-                    System.out.println("Invalid account.");
-                    return;
-                }
-            }
-            case MOVEMENT -> {
-                System.out.print("Enter FROM Account ID: ");
-                int fromId = Integer.parseInt(scanner.nextLine()) - 1;
-                from = currentUser.getAccountList().get(fromId);
-
-                System.out.print("Enter TO Account ID: ");
-                int toId = Integer.parseInt(scanner.nextLine()) - 1;
-                to = currentUser.getAccountList().get(toId);
-
-                if (from == null || to == null) {
-                    System.out.println("Invalid account(s).");
-                    return;
-                }
-            }
-        }
+        //Get accounts array for Transaction
+        AccountInterface[] accounts = getTransactionAccount(scanner, type, false);
 
         try {
-            transactionService.setCurrentUser(currentUser); // ✅ Required for service
-            transactionService.create(type, amount, category, reason, new Date(), to, from);
-            if (!currentUser.isCategoryAllowed(category)) {
-                currentUser.addCategory(category); // Auto add new categories
-            }
-
+            // Required for service
+            transactionService.create(type, amount, category, reason, new Date(), accounts[0], accounts[1]);
             System.out.println("Transaction created successfully!");
         } catch (Exception e) {
             System.out.println("Error creating transaction: " + e.getMessage());
         }
     }
 
+
+    private static AccountInterface[] getTransactionAccount(Scanner scanner, TransactionType type, boolean canEmpty) {
+        AccountInterface from = null, to = null;
+        switch (type) {
+            case INCOME -> to = getAccountId(scanner, " TO ", canEmpty, null);
+            case EXPENSE -> from = getAccountId(scanner, " FROM ", canEmpty, null);
+            case MOVEMENT -> {
+                from = getAccountId(scanner, " FROM ", canEmpty, null);
+                to = getAccountId(scanner, " TO ", canEmpty, from);
+            }
+        }
+        return new AccountInterface[]{to, from};
+    }
+
+    private static TransactionType requestForTransactionType(Scanner scanner, boolean canEmpty) {
+        System.out.println("\nSelect transaction type:");
+
+        for (int i = 0; i < TransactionType.values().length; i++) {
+            System.out.println(i + 1 + ". " + TransactionType.values()[i]);
+        }
+        System.out.print("Enter choice (1-" + TransactionType.values().length + "): ");
+
+        if (canEmpty) {
+            System.out.println("Press Enter to leave empty.");
+        }
+
+        TransactionType type;
+        String typeChoice = scanner.nextLine();
+        try {
+            type = TransactionType.values()[Integer.parseInt(typeChoice) - 1];
+            if (type.equals(MOVEMENT) && currentUser.getAccountList().size() < 2) {
+                System.out.println("\nInvalid choice. Movement Transaction need 2 different accounts!");
+                return requestForTransactionType(scanner, false);
+            }
+        } catch (Exception e) {
+            if (!canEmpty) {
+                System.out.println("Invalid choice. Select a valid account type!");
+                return requestForTransactionType(scanner, false);
+            }
+            return null;
+        }
+        return type;
+    }
+
+
+    private static String requestForCategory(Scanner scanner, boolean canEmpty) {
+        List<String> sortedCategories = currentUser.getSortedCategories();
+
+        if (sortedCategories.isEmpty()) {
+            System.out.println("\n⚠️  No categories found. Please insert a new category:");
+        } else {
+            System.out.println("\nSelect a category by number or type a new one:");
+            for (int i = 0; i < sortedCategories.size(); i++) {
+                System.out.printf("  %d. %s\n", i + 1, sortedCategories.get(i));
+            }
+        }
+
+        if (canEmpty) {
+            System.out.println("Press Enter to leave empty.");
+        }
+
+        System.out.print("Enter category: ");
+        String input = scanner.nextLine().trim();
+
+        if (input.isBlank()) {
+            return canEmpty ? null : requestForCategory(scanner, false); // retry if required
+        }
+
+        try {
+            int index = Integer.parseInt(input);
+            if (index >= 1 && index <= sortedCategories.size()) {
+                return sortedCategories.get(index - 1); // existing category
+            } else {
+                System.out.println("❌ Invalid index. Please try again.");
+                return requestForCategory(scanner, canEmpty);
+            }
+        } catch (NumberFormatException e) {
+            String newCategory = input.toUpperCase(); // normalize input to uppercase
+            if (!currentUser.isCategoryAllowed(newCategory)) {
+                currentUser.addCategory(newCategory);
+                System.out.println("✅ New category added: " + newCategory);
+            }
+            return newCategory;
+        }
+    }
+
+    /**
+     * Helper method to perform update on account
+     */
+    private static void performTransactionUpdate(Scanner scanner) {
+
+        System.out.println("\n===== UPDATE TRANSACTION =====");
+        //Get account recursively
+        AbstractTransaction transaction = getTransactionId(scanner, " ");
+
+        //Request type
+        //TransactionType type = requestForTransactionType(scanner, true);
+        //Request amount recusively
+        Double newAmount = requestForAmount(scanner, "Actual amount", true);
+        //Request for category
+        String newCategory = requestForCategory(scanner, true);
+        //Request for reason
+        System.out.print("Enter reason: ");
+        String reason = scanner.nextLine();
+
+        AccountInterface[] accounts = getTransactionAccount(scanner, transaction.getType(), true);
+        try {
+            transactionService.modify(transaction, newAmount, newCategory, reason, new Date(), accounts[0], accounts[1]);
+            System.out.println("Update: " + transaction + " successful!");
+        } catch (
+                Exception e) {
+            System.out.println("Error updating the transaction: " + e.getMessage());
+        }
+
+    }
+
+    private static AbstractTransaction getTransactionId(Scanner scanner, String cliLog) {
+        // Display available transactions
+        transactionService.displayAllTransactions();
+
+        System.out.print("Enter" + cliLog + "transaction ID: ");
+        int transactionId;
+        try {
+            transactionId = Integer.parseInt(scanner.nextLine()) - 1;
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid transaction ID. Please enter a number.");
+            return getTransactionId(scanner, cliLog);
+        }
+        try {
+            return currentUser.getAllTransactionsFlattened().get(transactionId);
+
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println("Transaction not found!");
+            return getTransactionId(scanner, cliLog);
+        }
+    }
+
+    /**
+     * Helper method to delete an account
+     */
+    private static void deleteTransaction(Scanner scanner) {
+        System.out.println("\n===== DELETE TRANSACTION =====");
+
+        //Get account recursively
+        AbstractTransaction transaction = getTransactionId(scanner, " ");
+
+        try {
+            transaction = transactionService.delete(transaction);
+            System.out.println("\n " + transaction + " deleted successfully!");
+        } catch (Exception e) {
+            System.out.println("\n Error deleting transaction: " + e.getMessage());
+        }
+    }
 }

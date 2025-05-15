@@ -97,7 +97,7 @@ class TransactionServiceTest {
 
         AbstractTransaction modified = transactionService.modify(
                 original,
-                200,
+                200.0,
                 "Dinner",
                 "cena di lavoro",
                 new Date(),
@@ -114,7 +114,7 @@ class TransactionServiceTest {
         AbstractTransaction original = transactionService.create(TransactionType.EXPENSE, 100, "Lunch","Meeting lunch", new Date(), null, acc2);
 
         Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.modify(original, 9999, "Dinner","Meeting Dinner", new Date(), null, acc2);
+            transactionService.modify(original, 9999.0, "Dinner","Meeting Dinner", new Date(), null, acc2);
         });
     }
 }

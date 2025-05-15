@@ -190,4 +190,18 @@ public class User {
         }
         return all;
     }
+
+    public Set<String> getCategorySet() {
+        return categorySet;
+    }
+
+    public void setCategorySet(Set<String> categorySet) {
+        this.categorySet = categorySet;
+    }
+
+    public List<String> getSortedCategories() {
+        return categorySet.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList(); // Java 21+ immutable list
+    }
 }

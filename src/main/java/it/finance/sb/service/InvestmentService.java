@@ -1,6 +1,6 @@
 package it.finance.sb.service;
 
-import it.finance.sb.decorator.InvestmentAccountDecorator;
+import it.finance.sb.model.decorator.InvestmentAccountDecorator;
 import it.finance.sb.model.account.AccountInterface;
 
 import java.util.HashMap;

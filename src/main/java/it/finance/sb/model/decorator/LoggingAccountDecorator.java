@@ -1,4 +1,4 @@
-package it.finance.sb.decorator;
+package it.finance.sb.model.decorator;
 
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;

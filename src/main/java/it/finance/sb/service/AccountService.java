@@ -7,8 +7,6 @@ import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.utility.InputSanitizer;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -16,7 +14,6 @@ import java.util.logging.Logger;
  */
 public class AccountService extends BaseService {
 
-    private final Map<Integer, AccountInterface> accounts = new HashMap<>();
     private final TransactionService transactionService;
     private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
 

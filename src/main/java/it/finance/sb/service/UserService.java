@@ -66,43 +66,24 @@ public class UserService extends BaseService {
     }
 
     /**
-     * Display all account balances.
+     * Display all account balances without the account used for movement
      */
-    public void displayAllAccount() {
+    public void displayAllAccount(AccountInterface accountInterfaceAvoid) {
         logger.info("[UserService] Showing all balances for user '" + getCurrentUser().getName() + "'");
         List<AccountInterface> accountList = getCurrentUser().getAccountList();
         for (int i = 0; i < accountList.size(); i++) {
-            AccountInterface accountInterface = accountList.get(i);
-            System.out.println(i + 1 + ") " + accountInterface);
+            if (accountInterfaceAvoid == null || accountInterfaceAvoid != accountList.get(i)) {
+                AccountInterface accountInterface = accountList.get(i);
+                System.out.println(i + 1 + ") " + accountInterface);
+            }
         }
     }
 
-
     /**
-     * Display all transactions for the current user (flattened list).
+     * Display all account balances.
      */
-    public void displayAllTransactions() {
-        User user = getCurrentUser();
-        logger.info("[UserService] Showing all transactions for user '" + user.getName() + "'");
-
-        List<AbstractTransaction> transactions = user.getAllTransactionsFlattened();
-
-        if (transactions.isEmpty()) {
-            System.out.println("⚠️ No transactions found.");
-            return;
-        }
-
-        System.out.println("\n📋 All Transactions:");
-        for (AbstractTransaction tx : transactions) {
-            System.out.printf("  ➤ ID: %-4d | 💰 Amount: %-8.2f | 📌 Category: %-12s | 📃 Reason: %-20s | 📅 Date: %s | Type: %s\n",
-                    tx.getTransactionId(),
-                    tx.getAmount(),
-                    tx.getCategory(),
-                    tx.getReason(),
-                    tx.getDate(),
-                    tx.getType().name()
-            );
-        }
+    public void displayAllAccount() {
+        displayAllAccount(null);
     }
 
     /**
@@ -118,6 +99,12 @@ public class UserService extends BaseService {
         }
         user.addCategory(category);
         logger.info("[UserService] Added category '" + category + "' for user " + user.getName());
+    }
+
+    public List<AbstractTransaction> getTransactionsByCategory(String category) {
+        return getCurrentUser().getAllTransactionsFlattened().stream()
+                .filter(tx -> tx.getCategory().equalsIgnoreCase(category))
+                .toList();
     }
 
 }
