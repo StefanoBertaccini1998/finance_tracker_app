@@ -163,7 +163,7 @@ public class FileIOServiceTest {
         importService.setCurrentUser(importUser);
         importService.importTransactions(path, false, false);
 
-        assertEquals(10, importUser.getAllTransactions().values().stream().mapToInt(List::size).sum());
+        assertEquals(10, importUser.getAllTransactionsFlattened().size());
         assertTrue(importUser.isCategoryAllowed("Salary"));
         assertTrue(importUser.getAccountList().contains(acc));
     }

@@ -331,21 +331,26 @@ public class FinanceTrackApplication {
 
         while (running) {
             System.out.println("\n===== TRANSACTION MENU =====");
-            System.out.println("1. Add Transaction");
-            System.out.println("2. View All Transactions");
-            System.out.println("3. Back to Main Menu");
+            System.out.println("1. View All Transactions");
+            System.out.println("2. Add Transaction");
+            System.out.println("3. Modify Transaction");
+            System.out.println("4. Delete Transaction");
+            System.out.println("5. Back to Main Menu");
             System.out.print("Select an option: ");
 
             String choice = scanner.nextLine();
 
             switch (choice) {
                 case "1":
-                    createTransactionCLI(scanner);
-                    break;
-                case "2":
                     userService.displayAllTransactions();
                     break;
+                case "2":
+                    createTransactionCLI(scanner);
+                    break;
                 case "3":
+                    running = false;
+                    break;
+                case "4":
                     running = false;
                     break;
                 default:

@@ -4,13 +4,14 @@ import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
+import it.finance.sb.model.composite.CompositeTransaction;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.iterator.TransactionIterator;
 import it.finance.sb.model.transaction.*;
 import it.finance.sb.model.user.User;
 import it.finance.sb.utility.InputSanitizer;
 
-import java.util.Date;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -238,4 +239,5 @@ public class TransactionService extends BaseService{
             }
         }
     }
+
 }

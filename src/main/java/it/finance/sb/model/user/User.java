@@ -2,11 +2,14 @@ package it.finance.sb.model.user;
 
 import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.account.AccountInterface;
+import it.finance.sb.model.composite.CompositeTransaction;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 
 import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * The type User.
@@ -163,15 +166,6 @@ public class User {
     }
 
     /**
-     * Update account.
-     *
-     * @param account the account
-     */
-    public void updateAccount(AccountInterface account){
-
-    }
-
-    /**
      * Gets all account balances.
      *
      * @return the all account balances
@@ -189,16 +183,11 @@ public class User {
      *
      * @return the all transactions
      */
-    public Map<TransactionType, List<AbstractTransaction>> getAllTransactions() {
-        Map<TransactionType, List<AbstractTransaction>> result = new HashMap<>();
-        for (var entry : transactionsMap.entrySet()) {
-            List<AbstractTransaction> txs = new ArrayList<>();
-            var iterator = entry.getValue().iterator();
-            while (iterator.hasNext()) {
-                txs.add(iterator.next());
-            }
-            result.put(entry.getKey(), txs);
+    public List<AbstractTransaction> getAllTransactionsFlattened() {
+        List<AbstractTransaction> all = new ArrayList<>();
+        for (TransactionList txList : transactionsMap.values()) {
+            all.addAll(txList.getFlattenedTransactions());
         }
-        return result;
+        return all;
     }
 }

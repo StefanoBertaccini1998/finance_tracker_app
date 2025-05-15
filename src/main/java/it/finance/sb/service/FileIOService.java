@@ -5,7 +5,6 @@ import it.finance.sb.io.CsvTransactionImporter;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
-import it.finance.sb.model.user.User;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -64,12 +63,7 @@ public class FileIOService extends BaseService{
         requireLoggedInUser();
         try {
             CsvWriter<AbstractTransaction> writer = new CsvWriter<>();
-            List<AbstractTransaction> allTxs = getCurrentUser().getAllTransactions()
-                    .values()
-                    .stream()
-                    .flatMap(List::stream)
-                    .toList();
-
+            List<AbstractTransaction> allTxs = getCurrentUser().getAllTransactionsFlattened();
             writer.writeToFile(allTxs, path);
 
             logger.info("[FileIOService] Exported " + allTxs.size() + " transactions to file: " + path);

@@ -1,12 +1,10 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.AccountOperationException;
-import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
-import it.finance.sb.model.user.User;
 import it.finance.sb.utility.InputSanitizer;
 
 import java.util.HashMap;

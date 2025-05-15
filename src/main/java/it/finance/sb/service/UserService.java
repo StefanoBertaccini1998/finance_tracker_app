@@ -79,17 +79,30 @@ public class UserService extends BaseService {
 
 
     /**
-     * Display all transactions.
+     * Display all transactions for the current user (flattened list).
      */
     public void displayAllTransactions() {
-        logger.info("[UserService] Showing all transactions for user '" + getCurrentUser().getName() + "'");
-        Map<TransactionType, List<AbstractTransaction>> txMap = getCurrentUser().getAllTransactions();
-        txMap.forEach((type, list) -> {
-            System.out.println("\nTransaction Type: " + type.name());
-            for (AbstractTransaction tx : list) {
-                System.out.println("  ID: " + tx.getTransactionId() + " | Amount: " + tx.getAmount() + " | Reason: " + tx.getReason() + " | Date: " + tx.getDate());
-            }
-        });
+        User user = getCurrentUser();
+        logger.info("[UserService] Showing all transactions for user '" + user.getName() + "'");
+
+        List<AbstractTransaction> transactions = user.getAllTransactionsFlattened();
+
+        if (transactions.isEmpty()) {
+            System.out.println("⚠️ No transactions found.");
+            return;
+        }
+
+        System.out.println("\n📋 All Transactions:");
+        for (AbstractTransaction tx : transactions) {
+            System.out.printf("  ➤ ID: %-4d | 💰 Amount: %-8.2f | 📌 Category: %-12s | 📃 Reason: %-20s | 📅 Date: %s | Type: %s\n",
+                    tx.getTransactionId(),
+                    tx.getAmount(),
+                    tx.getCategory(),
+                    tx.getReason(),
+                    tx.getDate(),
+                    tx.getType().name()
+            );
+        }
     }
 
     /**

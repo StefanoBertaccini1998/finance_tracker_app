@@ -3,12 +3,15 @@ package it.finance.sb.service;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
+import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
+import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
 import org.junit.jupiter.api.*;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -57,9 +60,14 @@ class UserServiceTest {
     }
 
     @Test
-    void testDisplayAllTransactions() {
-        Map<TransactionType, List<AbstractTransaction>> txMap = user.getAllTransactions();
-        assertTrue(txMap.containsKey(TransactionType.INCOME));
-        assertEquals(1, txMap.get(TransactionType.INCOME).size());
+    void testDisplayAllTransactions_flattenedList() {
+        List<AbstractTransaction> flatList = user.getAllTransactionsFlattened();
+
+        assertEquals(1, flatList.size());
+        AbstractTransaction retrieved = flatList.get(0);
+        assertEquals(200.0, retrieved.getAmount(), 0.001);
+        assertEquals("Category", retrieved.getCategory());
+        assertEquals("Bonus", retrieved.getReason());
+        assertEquals(TransactionType.INCOME, retrieved.getType());
     }
 }

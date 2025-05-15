@@ -72,6 +72,23 @@ public class TransactionList implements CompositeTransaction {
     }
 
     /**
+     * Get all the transaction in the map.
+     *
+     * @return the transaction iterator
+     */
+    public List<AbstractTransaction> getFlattenedTransactions() {
+        List<AbstractTransaction> result = new ArrayList<>();
+        for (CompositeTransaction ct : transactionList) {
+            if (ct instanceof AbstractTransaction tx) {
+                result.add(tx);
+            } else if (ct instanceof TransactionList nested) {
+                result.addAll(nested.getFlattenedTransactions());
+            }
+        }
+        return result;
+    }
+
+    /**
      * Modify transaction by id boolean.
      *
      * @param id       the id
