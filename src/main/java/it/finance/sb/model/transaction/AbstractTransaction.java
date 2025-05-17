@@ -1,6 +1,7 @@
 package it.finance.sb.model.transaction;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.composite.CompositeTransaction;
 import it.finance.sb.io.CsvSerializable;
@@ -15,6 +16,7 @@ public abstract class AbstractTransaction implements CompositeTransaction, CsvSe
     /**
      * The Transaction id.
      */
+    @JsonProperty
     protected final int transactionId;  // UNIQUE + final
     private static int idCounter = 0;
     /**

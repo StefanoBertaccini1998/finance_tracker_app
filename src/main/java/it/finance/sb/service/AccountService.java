@@ -1,6 +1,8 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.AccountOperationException;
+import it.finance.sb.exception.DataValidationException;
+import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccounType;
@@ -35,7 +37,7 @@ public class AccountService extends BaseService {
      * @return the abstract account
      * @throws Exception the exception
      */
-    public AccountInterface create(AccounType type, String name, Double balance) throws Exception {
+    public AccountInterface create(AccounType type, String name, Double balance) throws AccountOperationException, DataValidationException, UserLoginException {
         requireLoggedInUser();
 
         //Create account using factory
@@ -54,7 +56,7 @@ public class AccountService extends BaseService {
      * @param account the account
      * @return the abstract account
      */
-    public AccountInterface delete(AccountInterface account) throws AccountOperationException {
+    public AccountInterface delete(AccountInterface account) throws AccountOperationException, UserLoginException {
         requireLoggedInUser();
         if (account == null) {
             throw new AccountOperationException("Cannot delete a null account.");
@@ -78,7 +80,7 @@ public class AccountService extends BaseService {
      * @param newBalance the new balance
      * @return the abstract account
      */
-    public AccountInterface modify(AccountInterface account, AccounType type, String newName, Double newBalance) throws Exception {
+    public AccountInterface modify(AccountInterface account, AccounType type, String newName, Double newBalance) throws DataValidationException, UserLoginException {
         requireLoggedInUser();
 
         if (newName != null && !newName.trim().isEmpty()) {
@@ -95,5 +97,4 @@ public class AccountService extends BaseService {
         return account;
     }
 
-    //TODO SUGGESTION
 }

@@ -26,8 +26,13 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.17.0</version>
+        </dependency>
 
-        <!-- ✅ (Optional) Mockito if you want to use it later -->
+        <!--  Mockito to use it later -->
         <!--
         <dependency>
             <groupId>org.mockito</groupId>

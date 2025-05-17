@@ -1,6 +1,7 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.TransactionOperationException;
+import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
@@ -41,7 +42,7 @@ public class TransactionService extends BaseService {
      * @throws TransactionOperationException the transaction operation exception
      */
     public AbstractTransaction create(TransactionType type, double amount, String category, String reason, Date date,
-                                      AccountInterface toAccount, AccountInterface fromAccount) throws TransactionOperationException {
+                                      AccountInterface toAccount, AccountInterface fromAccount) throws TransactionOperationException, UserLoginException {
         requireLoggedInUser();
         try {
             if (amount <= 0) {
@@ -81,7 +82,7 @@ public class TransactionService extends BaseService {
             InputSanitizer.validate(transaction);
             getCurrentUser().addTransaction(transaction);
 
-            logger.info("[TransactionService] Created " + type + " transaction: ID=" + transaction.getTransactionId() + ", amount=" + amount);
+            logger.info("[TransactionService] Created INCOME transaction for user=" + currentUser.getName());
             return transaction;
 
         } catch (TransactionOperationException e) {
@@ -100,7 +101,7 @@ public class TransactionService extends BaseService {
      * @return the abstract transaction
      * @throws TransactionOperationException the transaction operation exception
      */
-    public AbstractTransaction delete(AbstractTransaction transaction) throws TransactionOperationException {
+    public AbstractTransaction delete(AbstractTransaction transaction) throws TransactionOperationException, UserLoginException {
         requireLoggedInUser();
         if (transaction == null) {
             throw new TransactionOperationException("Cannot delete a null transaction.");
@@ -274,11 +275,12 @@ public class TransactionService extends BaseService {
     /**
      * Display all transactions for the current user (flattened list).
      */
+    //TODO move away
     public void displayAllTransactions() {
         User user = getCurrentUser();
         logger.info("[UserService] Showing all transactions for user '" + user.getName() + "'");
 
-        List<AbstractTransaction> transactions = user.getAllTransactionsFlattened();
+        List<AbstractTransaction> transactions = getAllTransactionsFlattened();
 
         if (transactions.isEmpty()) {
             System.out.println("⚠️ No transactions found.");
@@ -296,5 +298,24 @@ public class TransactionService extends BaseService {
                     tx.getType().name()
             );
         }
+    }
+
+    /**
+     * Gets all transactions.
+     *
+     * @return the all transactions
+     */
+    public List<AbstractTransaction> getAllTransactionsFlattened() {
+        List<AbstractTransaction> all = new ArrayList<>();
+        for (TransactionList txList : getCurrentUser().getTransactionLists().values()) {
+            all.addAll(txList.getFlattenedTransactions());
+        }
+        return all;
+    }
+
+    public List<AbstractTransaction> getTransactionsByCategory(String category) {
+        return getAllTransactionsFlattened().stream()
+                .filter(tx -> tx.getCategory().equalsIgnoreCase(category))
+                .toList();
     }
 }

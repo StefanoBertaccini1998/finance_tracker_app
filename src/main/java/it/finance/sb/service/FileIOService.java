@@ -1,8 +1,11 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.TransactionOperationException;
+import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.io.CsvTransactionImporter;
 import it.finance.sb.io.CsvWriter;
+import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 
@@ -14,17 +17,20 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class FileIOService extends BaseService{
+public class FileIOService extends BaseService {
 
-    private static final Logger logger = Logger.getLogger(FileIOService.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(FileIOService.class);
 
-    public FileIOService() {
+    private final TransactionService transactionService;
+
+    public FileIOService(TransactionService transactionService) {
+        this.transactionService = transactionService;
     }
 
     /**
      * Imports a list of transactions from a CSV file and adds them to the user.
      */
-    public void importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors) throws TransactionOperationException {
+    public void importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors) throws FileIOException, UserLoginException {
         requireLoggedInUser();
         try {
             // Map<AccountId, Account>
@@ -52,25 +58,25 @@ public class FileIOService extends BaseService{
 
         } catch (Exception e) {
             logger.warning("[FileIOService] Import failed: " + e.getMessage());
-            throw new TransactionOperationException("Failed to import transactions: " + e.getMessage(), e);
+            throw new FileIOException("Failed to import transactions: " + e.getMessage(), e);
         }
     }
 
     /**
      * Exports a transaction list from the user to a CSV file.
      */
-    public void exportTransactions(Path path) throws TransactionOperationException {
+    public void exportTransactions(Path path) throws FileIOException, UserLoginException {
         requireLoggedInUser();
         try {
             CsvWriter<AbstractTransaction> writer = new CsvWriter<>();
-            List<AbstractTransaction> allTxs = getCurrentUser().getAllTransactionsFlattened();
+            List<AbstractTransaction> allTxs = transactionService.getAllTransactionsFlattened();
             writer.writeToFile(allTxs, path);
 
             logger.info("[FileIOService] Exported " + allTxs.size() + " transactions to file: " + path);
 
         } catch (Exception e) {
             logger.severe("[FileIOService] Export failed: " + e.getMessage());
-            throw new TransactionOperationException("Failed to export transactions.", e);
+            throw new FileIOException("Failed to export transactions.", e);
         }
     }
 }

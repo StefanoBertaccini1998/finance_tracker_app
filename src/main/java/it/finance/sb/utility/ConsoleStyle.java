@@ -43,4 +43,16 @@ public class ConsoleStyle {
     public static String menuTitle(String title) {
         return BOLD + "\n🔹 " + title.toUpperCase() + RESET;
     }
+
+    public static String inputPrompt(String label) {
+        return BOLD + WHITE + "👉 " + label + ": " + RESET;
+    }
+
+    public static String highlight(String value) {
+        return BOLD + PURPLE + value + RESET;
+    }
+
+    public static String actionSuccess(String label, Object target) {
+        return success(label + ": ") + CYAN + target + RESET;
+    }
 }

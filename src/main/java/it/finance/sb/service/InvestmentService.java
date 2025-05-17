@@ -1,5 +1,6 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.model.decorator.InvestmentAccountDecorator;
 import it.finance.sb.model.account.AccountInterface;
 
@@ -31,7 +32,7 @@ public class InvestmentService extends BaseService {
     /**
      * Gets or creates an investment decorator for the given account ID
      */
-    public InvestmentAccountDecorator getInvestmentAccount(int accountId, double interestRate) {
+    public InvestmentAccountDecorator getInvestmentAccount(int accountId, double interestRate) throws UserLoginException {
         requireLoggedInUser();
 
         // Make sure the account service has the same user context
@@ -65,7 +66,7 @@ public class InvestmentService extends BaseService {
     /**
      * Displays an investment menu for the CLI
      */
-    public void showInvestmentMenu() {
+    public void showInvestmentMenu() throws UserLoginException {
         requireLoggedInUser();
         accountService.setCurrentUser(getCurrentUser());
 
@@ -169,7 +170,7 @@ public class InvestmentService extends BaseService {
     /**
      * Generate a projection report
      */
-    private String generateProjectionReport(int accountId, double interestRate, int years, double monthlyDeposit) {
+    private String generateProjectionReport(int accountId, double interestRate, int years, double monthlyDeposit) throws UserLoginException {
         InvestmentAccountDecorator investmentAccount = getInvestmentAccount(accountId, interestRate);
 
         double[] projections = investmentAccount.projectGrowth(years, monthlyDeposit);

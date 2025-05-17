@@ -1,5 +1,6 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.model.user.User;
 
 /**
@@ -32,9 +33,9 @@ public abstract class BaseService {
     /**
      * Validates that a user is logged in, throws exception if not
      */
-    protected void requireLoggedInUser() {
+    protected void requireLoggedInUser() throws UserLoginException {
         if (!isUserLoggedIn()) {
-            throw new IllegalStateException("Operation requires a logged in user");
+            throw new UserLoginException("Operation requires a logged in user");
         }
     }
 

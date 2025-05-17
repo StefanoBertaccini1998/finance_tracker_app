@@ -1,10 +1,12 @@
 package it.finance.sb.model.account;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.finance.sb.annotation.Sanitize;
 
 public class Account implements AccountInterface {
     private static int idCounter = 0;
 
+    @JsonProperty
     private final int accountId;
 
     @Sanitize(notBlank = true, maxLength = 30)

@@ -61,7 +61,7 @@ class UserServiceTest {
 
     @Test
     void testDisplayAllTransactions_flattenedList() {
-        List<AbstractTransaction> flatList = user.getAllTransactionsFlattened();
+        List<AbstractTransaction> flatList = transactionService.getAllTransactionsFlattened();
 
         assertEquals(1, flatList.size());
         AbstractTransaction retrieved = flatList.get(0);

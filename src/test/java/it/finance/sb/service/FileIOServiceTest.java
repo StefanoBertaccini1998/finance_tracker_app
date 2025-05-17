@@ -1,7 +1,9 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.AccountOperationException;
+import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.TransactionOperationException;
+import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.io.CsvTransactionImporter;
 import it.finance.sb.model.account.AccounType;
@@ -24,7 +26,7 @@ public class FileIOServiceTest {
     @Test
     void testCsvParsingWithMixedValidLines_NoFile() throws Exception {
         User user = new User("NoFileUser", 30, Gender.OTHER);
-        AccountInterface mainAcc =AccountFactory.createAccount(AccounType.BANK,"MainAcc", 1000);
+        AccountInterface mainAcc = AccountFactory.createAccount(AccounType.BANK, "MainAcc", 1000);
         user.addAccount(mainAcc);
 
         // Account map used for resolving names
@@ -75,13 +77,13 @@ public class FileIOServiceTest {
         assertTrue(errors.stream().anyMatch(e -> e.contains("EXPENSE")));
         assertTrue(errors.stream().anyMatch(e -> e.contains("NEGATIVE")));
 
-        assertEquals(6,user.getAccountList().size());
+        assertEquals(6, user.getAccountList().size());
     }
 
     @Test
     void testCsvParsingWithMixedValidLines_falseAccount() throws Exception {
         User user = new User("NoFileUser", 30, Gender.OTHER);
-        AccountInterface mainAcc =AccountFactory.createAccount(AccounType.BANK,"MainAcc", 1000);
+        AccountInterface mainAcc = AccountFactory.createAccount(AccounType.BANK, "MainAcc", 1000);
         user.addAccount(mainAcc);
 
         // Account map used for resolving names
@@ -130,13 +132,13 @@ public class FileIOServiceTest {
         assertTrue(errors.stream().anyMatch(e -> e.contains("MOVEMENT")));
         assertTrue(errors.stream().anyMatch(e -> e.contains("NEGATIVE")));
 
-        assertEquals(1,user.getAccountList().size());
+        assertEquals(1, user.getAccountList().size());
     }
 
     @Test
-    void testExportAndReimportWithCsvFile() throws AccountOperationException, TransactionOperationException {
+    void testExportAndReimportWithCsvFile() throws AccountOperationException, FileIOException, UserLoginException {
         User exportUser = new User("ExportUser", 25, Gender.MALE);
-        AccountInterface acc =AccountFactory.createAccount(AccounType.BANK,"MainAcc", 1000);
+        AccountInterface acc = AccountFactory.createAccount(AccounType.BANK, "MainAcc", 1000);
         exportUser.addAccount(acc);
 
         for (int i = 0; i < 10; i++) {
@@ -150,8 +152,9 @@ public class FileIOServiceTest {
             exportUser.addTransaction(tx);
             exportUser.addCategory(tx.getCategory());
         }
-
-        FileIOService exportService = new FileIOService();
+        TransactionService transactionService = new TransactionService();
+        transactionService.setCurrentUser(exportUser);
+        FileIOService exportService = new FileIOService(transactionService);
         exportService.setCurrentUser(exportUser);
         Path path = Path.of("transactions_export_test.csv");
         exportService.exportTransactions(path);
@@ -159,11 +162,12 @@ public class FileIOServiceTest {
         // Re-import into new user
         User importUser = new User("ImportUser", 31, Gender.FEMALE);
         importUser.addAccount(acc); // required for resolution
-        FileIOService importService = new FileIOService();
+        transactionService.setCurrentUser(importUser);
+        FileIOService importService = new FileIOService(transactionService);
         importService.setCurrentUser(importUser);
         importService.importTransactions(path, false, false);
 
-        assertEquals(10, importUser.getAllTransactionsFlattened().size());
+        assertEquals(10, transactionService.getAllTransactionsFlattened().size());
         assertTrue(importUser.isCategoryAllowed("Salary"));
         assertTrue(importUser.getAccountList().contains(acc));
     }

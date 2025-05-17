@@ -178,18 +178,6 @@ public class User {
         return result;
     }
 
-    /**
-     * Gets all transactions.
-     *
-     * @return the all transactions
-     */
-    public List<AbstractTransaction> getAllTransactionsFlattened() {
-        List<AbstractTransaction> all = new ArrayList<>();
-        for (TransactionList txList : transactionsMap.values()) {
-            all.addAll(txList.getFlattenedTransactions());
-        }
-        return all;
-    }
 
     public Set<String> getCategorySet() {
         return categorySet;

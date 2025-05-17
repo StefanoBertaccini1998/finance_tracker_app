@@ -89,22 +89,15 @@ public class UserService extends BaseService {
     /**
      * Add category.
      *
-     * @param user     the user
      * @param category the category
      */
-    public void addCategory(User user, String category) {
+    public void addCategory(String category) {
         if (category == null || category.isBlank()) {
             logger.warning("[UserService] Rejected blank category");
             return;
         }
-        user.addCategory(category);
-        logger.info("[UserService] Added category '" + category + "' for user " + user.getName());
-    }
-
-    public List<AbstractTransaction> getTransactionsByCategory(String category) {
-        return getCurrentUser().getAllTransactionsFlattened().stream()
-                .filter(tx -> tx.getCategory().equalsIgnoreCase(category))
-                .toList();
+        getCurrentUser().addCategory(category);
+        logger.info("[UserService] Added category '" + category + "' for user " + getCurrentUser().getName());
     }
 
 }

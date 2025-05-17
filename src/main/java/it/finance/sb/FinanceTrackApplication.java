@@ -1,3 +1,4 @@
+/*
 package it.finance.sb;
 
 import it.finance.sb.model.account.AccounType;
@@ -27,35 +28,33 @@ public class FinanceTrackApplication {
 
 
     public static void main(String[] args) {
-        System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
-        // For simplicity, we'll create a default user
-        // In a real app, this would have proper authentication
-        loginUser();
-
-        // Start the main menu
+        System.out.println(ConsoleStyle.header("🎉 Welcome to 💸 FinanceTrack CLI!"));
+        loginUser(); // demo login
         showMainMenu();
-
-        System.out.println("Thank you for using Simple Banking System!");
+        System.out.println(ConsoleStyle.info("👋 Thank you for using FinanceTrack!"));
     }
 
 
-    /**
+    */
+/**
      * Create and log in a demo user
-     */
+     *//*
+
     private static void loginUser() {
         currentUser = new User("Stefano", 29, Gender.OTHER);
-        System.out.println(ConsoleStyle.info("Logged in as: ") + currentUser.getName());
+        System.out.println(ConsoleStyle.info("🔐 Logged in as: ") + ConsoleStyle.success(currentUser.getName()));
 
-        // Set the user in our services
         userService.setCurrentUser(currentUser);
         accountService.setCurrentUser(currentUser);
         investmentService.setCurrentUser(currentUser);
         transactionService.setCurrentUser(currentUser);
     }
 
-    /**
+    */
+/**
      * Shows the main application menu
-     */
+     *//*
+
     private static void showMainMenu() {
         Scanner scanner = new Scanner(System.in);
         boolean running = true;
@@ -94,9 +93,11 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
+    */
+/**
      * Shows the account management menu
-     */
+     *//*
+
     private static void showAccountMenu() {
         Scanner scanner = new Scanner(System.in);
         boolean running = true;
@@ -145,9 +146,11 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
+    */
+/**
      * Helper method to create a new account
-     */
+     *//*
+
     private static void createNewAccount(Scanner scanner) {
         System.out.println("\n===== CREATE NEW ACCOUNT =====");
 
@@ -165,9 +168,11 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
+    */
+/**
      * Helper method to recursive request a valid amount
-     */
+     *//*
+
     private static Double requestForAmount(Scanner scanner, String cliLog, boolean canEmpty) {
         System.out.print("\nEnter " + cliLog + ":");
         if (canEmpty) {
@@ -218,9 +223,11 @@ public class FinanceTrackApplication {
         return type;
     }
 
-    /**
+    */
+/**
      * Helper method to delete an account
-     */
+     *//*
+
     private static void deleteAccount(Scanner scanner) {
         System.out.println("\n===== DELETE ACCOUNT =====");
 
@@ -235,9 +242,11 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
+    */
+/**
      * Helper method to perform update on account
-     */
+     *//*
+
     private static void performAccountUpdate(Scanner scanner) {
 
         System.out.println("\n===== UPDATE ACCOUNT =====");
@@ -439,9 +448,11 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
+    */
+/**
      * Helper method to perform update on account
-     */
+     *//*
+
     private static void performTransactionUpdate(Scanner scanner) {
 
         System.out.println("\n===== UPDATE TRANSACTION =====");
@@ -482,7 +493,7 @@ public class FinanceTrackApplication {
             return getTransactionId(scanner, cliLog);
         }
         try {
-            return currentUser.getAllTransactionsFlattened().get(transactionId);
+            return transactionService.getAllTransactionsFlattened().get(transactionId);
 
         } catch (IndexOutOfBoundsException e) {
             System.out.println("Transaction not found!");
@@ -490,9 +501,11 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
+    */
+/**
      * Helper method to delete an account
-     */
+     *//*
+
     private static void deleteTransaction(Scanner scanner) {
         System.out.println("\n===== DELETE TRANSACTION =====");
 
@@ -507,3 +520,4 @@ public class FinanceTrackApplication {
         }
     }
 }
+*/

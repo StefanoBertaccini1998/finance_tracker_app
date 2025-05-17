@@ -51,7 +51,7 @@ public class main {
 
         //Check reflexive account & transaction
         user.getAllAccountBalances();
-        user.getAllTransactionsFlattened();
+        transactionService.getAllTransactionsFlattened();
 
     }
 }
