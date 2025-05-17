@@ -1,5 +1,6 @@
 package it.finance.sb.model.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.composite.CompositeTransaction;
@@ -15,11 +16,14 @@ import java.util.stream.Collectors;
  * The type User.
  */
 public class User {
+    private static int idCounter = 0;
+    @JsonProperty
+    private final int userId;
     @Sanitize(notBlank = true, maxLength = 50)
     private String name;
     private int age;
     private Gender gender;
-    private Map<TransactionType, TransactionList> transactionsMap;
+    private final Map<TransactionType, TransactionList> transactionLists = new EnumMap<>(TransactionType.class);
     private List<AccountInterface> accountList;
     private Set<String> categorySet;
 
@@ -31,20 +35,24 @@ public class User {
      * @param gender the gender
      */
     public User(String name, int age, Gender gender) {
+        this.userId = ++idCounter;
         this.name = name;
         this.age = age;
         this.gender = gender;
-        createTransactionList();
+        for (TransactionType type : TransactionType.values()) {
+            transactionLists.put(type, new TransactionList());
+        }
         this.categorySet = new HashSet<>(List.of("Food", "Utilities", "Transport"));
         accountList = new ArrayList<>();
     }
 
-    private void createTransactionList(){
-        Map<TransactionType, TransactionList> transactionMap = new HashMap<>();
-        transactionMap.put(TransactionType.EXPENSE,new TransactionList());
-        transactionMap.put(TransactionType.INCOME,new TransactionList());
-        transactionMap.put(TransactionType.MOVEMENT,new TransactionList());
-        this.transactionsMap = transactionMap;
+    /**
+     * Gets UserID.
+     *
+     * @return the ID
+     */
+    public int getUserId() {
+        return userId;
     }
 
     /**
@@ -107,7 +115,8 @@ public class User {
      * @return the transaction lists
      */
     public  Map<TransactionType, TransactionList> getTransactionLists() {
-        return transactionsMap;
+        return Collections.unmodifiableMap(transactionLists);
+        //return transactionLists;
     }
 
     /**
@@ -116,7 +125,8 @@ public class User {
      * @return the account list
      */
     public List<AccountInterface> getAccountList() {
-        return accountList;
+        return Collections.unmodifiableList(accountList);
+        //return accountList;
     }
 
     /**
@@ -135,6 +145,15 @@ public class User {
      */
     public void addAccount(AccountInterface account) {
         this.accountList.add(account);
+    }
+
+    /**
+     * Remove account.
+     *
+     * @param account the account
+     */
+    public void removeAccount(AccountInterface account) {
+        this.accountList.remove(account);
     }
 
     /**
@@ -162,7 +181,7 @@ public class User {
      * @param transaction the transaction
      */
     public void addTransaction(AbstractTransaction transaction) {
-        this.transactionsMap.get(transaction.getType()).addTransaction(transaction);
+        this.transactionLists.get(transaction.getType()).addTransaction(transaction);
     }
 
     /**

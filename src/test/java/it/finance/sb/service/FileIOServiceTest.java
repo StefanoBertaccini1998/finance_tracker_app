@@ -2,7 +2,6 @@ package it.finance.sb.service;
 
 import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.exception.FileIOException;
-import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.io.CsvTransactionImporter;
@@ -19,7 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FileIOServiceTest {
 

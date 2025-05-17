@@ -147,7 +147,7 @@ public class FinanceTrackApplicationNew {
                     if (currentUser.getAccountList().isEmpty()) {
                         System.out.println(ConsoleStyle.warning("No accounts found. Please create one."));
                     } else {
-                        userService.displayAllAccount();
+                        accountService.displayAllAccount();
                         System.out.println(ConsoleStyle.info("Press Enter to continue..."));
                         new Scanner(System.in).nextLine();
                     }
@@ -177,7 +177,7 @@ public class FinanceTrackApplicationNew {
     }
 
     private static AccountInterface getAccountId(String label, boolean canEmpty, AccountInterface exclude) {
-        userService.displayAllAccount(exclude);
+        accountService.displayAllAccount(exclude);
         String input = ConsoleUtils.prompt("Enter " + label + " Account ID", canEmpty);
 
         if (input.isBlank() && canEmpty) return null;

@@ -1,12 +1,15 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.MementoException;
+import it.finance.sb.mapper.UserMapper;
+import it.finance.sb.mapper.UserSnapshot;
 import it.finance.sb.model.user.User;
 import it.finance.sb.memento.UserMementoManager;
 import it.finance.sb.logging.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MementoService {
@@ -14,23 +17,28 @@ public class MementoService {
     private static final Logger logger = LoggerFactory.getLogger(MementoService.class);
 
     public void saveUser(User user) throws MementoException {
+        if (user == null) throw new IllegalArgumentException("Cannot save null user.");
         try {
-            UserMementoManager.save(user);
+            UserSnapshot snapshot = UserMapper.toSnapshot(user);
+            UserMementoManager.save(snapshot);
             logger.info("[MementoService] User '" + user.getName() + "' saved successfully.");
         } catch (Exception e) {
-            logger.severe("[MementoService] Failed to save user: " + e.getMessage());
-            throw new MementoException("Saving failed", e);
+            logger.log(Level.SEVERE, "[MementoService] Error saving user: " + user.getName(), e);
+            throw new MementoException("Could not save user. Internal error.", e);
         }
     }
 
     public Optional<User> loadUser(String username) throws MementoException {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Username cannot be null or blank.");
+        }
+
         try {
-            Optional<User> result = UserMementoManager.load(username);
-            if (result.isEmpty()) logger.warning("[MementoService] No user found with name: " + username);
-            return result;
+            Optional<UserSnapshot> snapshotOpt = UserMementoManager.load(username);
+            return snapshotOpt.map(UserMapper::fromSnapshot);
         } catch (Exception e) {
-            logger.severe("[MementoService] Error loading user '" + username + "': " + e.getMessage());
-            throw new MementoException("Load failed", e);
+            logger.log(Level.SEVERE, "[MementoService] Error loading user '" + username + "'", e);
+            throw new MementoException("Failed to load user data.", e);
         }
     }
 
@@ -41,10 +49,10 @@ public class MementoService {
     public boolean deleteUser(String username) {
         try {
             boolean deleted = UserMementoManager.delete(username);
-            logger.info("[MementoService] Deleted user '" + username + "': " + deleted);
+            logger.info("[MementoService] Deleted user '" + username + "'");
             return deleted;
         } catch (Exception e) {
-            logger.warning("[MementoService] Failed to delete user '" + username + "': " + e.getMessage());
+            logger.log(Level.WARNING, "[MementoService] Failed to delete user '" + username + "'", e);
             return false;
         }
     }
