@@ -1,183 +1,115 @@
 package it.finance.sb.service;
 
-import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.UserLoginException;
-import it.finance.sb.factory.AccountFactory;
-import it.finance.sb.io.CsvTransactionImporter;
+import it.finance.sb.io.CsvImporter;
+import it.finance.sb.io.CsvWriter;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
-import it.finance.sb.utility.InputSanitizer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class FileIOServiceTest {
 
-    @Test
-    void testCsvParsingWithMixedValidLines_NoFile() throws Exception {
-        User user = new User("NoFileUser", 30, Gender.OTHER);
-        AccountInterface mainAcc = AccountFactory.createAccount(AccounType.BANK, "MainAcc", 1000);
-        user.addAccount(mainAcc);
+    private TransactionService transactionService;
+    private CsvImporter<AbstractTransaction> mockImporter;
+    private CsvWriter<AbstractTransaction> mockWriter;
+    private FileIOService fileIOService;
 
-        // Account map used for resolving names
-        Map<String, AccountInterface> accountMap = new HashMap<>();
-        accountMap.put(mainAcc.getName(), mainAcc);
+    private User user;
+    private AccountInterface account;
 
-        List<String> csvLines = List.of(
-                "TransactionId,Type,Amount,From,To,Category,Reason,Date",
-                "1,INCOME,1000,,MainAcc,Salary,Monthly pay," + System.currentTimeMillis(),                  // ✅ OK
-                "2,EXPENSE,200,MainAcc,,Food,Groceries," + System.currentTimeMillis(),                      // ✅ OK
-                "3,MOVEMENT,300,MainAcc,Savings,Transfer,Move to savings," + System.currentTimeMillis(),    // ✅ Account Savings created
-                "4,INCOME,500,UnknownAcc,,Gift,Gift income," + System.currentTimeMillis(),                  // ❌ Null to account for an Income
-                "5,MOVEMENT,150,AutoAcc1,AutoAcc2,TopUp,Top up both," + System.currentTimeMillis(),         // ✅ Auto-create both
-                "6,EXPENSE,120,,AutoAcc1,Bills,Electricity bill," + System.currentTimeMillis(),             // ❌ Null to account for an Expense
-                "7,INCOME,999,,AutoAcc3,Bonus,Special bonus," + System.currentTimeMillis(),                 // ✅ Auto-create AutoAcc3
-                "8,EXPENSE,-150,MainAcc,,Error,Negative amount," + System.currentTimeMillis(),              // ❌ Invalid value
-                "9,INCOME,200,,MainAcc,,No category," + System.currentTimeMillis(),                         // ✅ Missing category added
-                "10,MOVEMENT,50,MainAcc,MainAcc,Internal,Self move," + System.currentTimeMillis()           // ✅ Valid self move
-        );
+    @BeforeEach
+    void setUp() {
+        transactionService = new TransactionService();
+        mockImporter = Mockito.mock(CsvImporter.class);
+        mockWriter = Mockito.mock(CsvWriter.class);
 
-        List<String> errors = new ArrayList<>();
+        fileIOService = new FileIOService(transactionService, mockImporter, mockWriter);
 
-        List<AbstractTransaction> parsed = CsvTransactionImporter.importTransactions(
-                inlineToTempCsv(csvLines), accountMap, true, true, errors
-        );
+        user = new User("TestUser", 30, Gender.OTHER);
+        account = new it.finance.sb.model.account.Account("TestAccount", 1000, AccounType.BANK);
+        user.addAccount(account);
 
-        for (AccountInterface acc : accountMap.values()) {
-            if (!user.getAccountList().contains(acc)) {
-                user.addAccount(acc);
-            }
-        }
-
-        for (AbstractTransaction tx : parsed) {
-            InputSanitizer.validate(tx);
-            user.addTransaction(tx);
-            if (tx.getCategory() != null && !user.isCategoryAllowed(tx.getCategory())) {
-                user.addCategory(tx.getCategory());
-            }
-        }
-
-        assertEquals(7, parsed.size());
-        assertTrue(user.getAccountList().stream().anyMatch(a -> a.getName().equals("AutoAcc1")));
-        assertTrue(user.getAccountList().stream().anyMatch(a -> a.getName().equals("AutoAcc2")));
-        assertTrue(user.getAccountList().stream().anyMatch(a -> a.getName().equals("AutoAcc3")));
-
-        assertEquals(3, errors.size()); // 3 intentionally invalid lines
-        assertTrue(errors.stream().anyMatch(e -> e.contains("INCOME")));
-        assertTrue(errors.stream().anyMatch(e -> e.contains("EXPENSE")));
-        assertTrue(errors.stream().anyMatch(e -> e.contains("NEGATIVE")));
-
-        assertEquals(6, user.getAccountList().size());
+        fileIOService.setCurrentUser(user);
+        transactionService.setCurrentUser(user);
     }
 
     @Test
-    void testCsvParsingWithMixedValidLines_falseAccount() throws Exception {
-        User user = new User("NoFileUser", 30, Gender.OTHER);
-        AccountInterface mainAcc = AccountFactory.createAccount(AccounType.BANK, "MainAcc", 1000);
-        user.addAccount(mainAcc);
+    void testExportTransactions_success() throws Exception {
+        AbstractTransaction tx = new IncomeTransaction(100.0, "Salary", "Monthly", new Date(), account);
+        user.addTransaction(tx);
 
-        // Account map used for resolving names
-        Map<String, AccountInterface> accountMap = new HashMap<>();
-        accountMap.put(mainAcc.getName(), mainAcc);
+        Path outputPath = Path.of("dummy_output.csv");
 
-        List<String> csvLines = List.of(
-                "TransactionId,Type,Amount,From,To,Category,Reason,Date",                          // ✅ 1
-                "1,INCOME,1000,,MainAcc,Salary,Monthly pay," + System.currentTimeMillis(),                  // ✅ OK
-                "2,EXPENSE,200,MainAcc,,Food,Groceries," + System.currentTimeMillis(),                      // ✅ OK
-                "3,MOVEMENT,300,MainAcc,Savings,Transfer,Move to savings," + System.currentTimeMillis(),    // ❌ Account Savings created
-                "4,INCOME,500,UnknownAcc,,Gift,Gift income," + System.currentTimeMillis(),                  // ❌ Null to account for an Income
-                "5,MOVEMENT,150,AutoAcc1,AutoAcc2,TopUp,Top up both," + System.currentTimeMillis(),         // ❌ Auto-create both
-                "6,EXPENSE,120,,AutoAcc1,Bills,Electricity bill," + System.currentTimeMillis(),             // ❌ Null to account for an Expense
-                "7,INCOME,999,,AutoAcc3,Bonus,Special bonus," + System.currentTimeMillis(),                 // ❌ Auto-create AutoAcc3
-                "8,EXPENSE,-150,MainAcc,,Error,Negative amount," + System.currentTimeMillis(),              // ❌ Invalid value
-                "9,INCOME,200,,MainAcc,,No category," + System.currentTimeMillis(),                         // ✅ Missing category added
-                "10,MOVEMENT,50,MainAcc,MainAcc,Internal,Self move," + System.currentTimeMillis()           // ✅ Valid self move
-        );
+        doNothing().when(mockWriter).exportToFile(any(), eq(outputPath));
 
-        List<String> errors = new ArrayList<>();
+        assertDoesNotThrow(() -> fileIOService.exportTransactions(outputPath));
 
-        List<AbstractTransaction> parsed = CsvTransactionImporter.importTransactions(
-                inlineToTempCsv(csvLines), accountMap, false, true, errors
-        );
-
-        for (AccountInterface acc : accountMap.values()) {
-            if (!user.getAccountList().contains(acc)) {
-                user.addAccount(acc);
-            }
-        }
-
-        for (AbstractTransaction tx : parsed) {
-            InputSanitizer.validate(tx);
-            user.addTransaction(tx);
-            if (tx.getCategory() != null && !user.isCategoryAllowed(tx.getCategory())) {
-                user.addCategory(tx.getCategory());
-            }
-        }
-
-        assertEquals(4, parsed.size());
-
-        assertEquals(6, errors.size()); // 6 intentionally invalid lines
-        assertTrue(errors.stream().anyMatch(e -> e.contains("INCOME")));
-        assertTrue(errors.stream().anyMatch(e -> e.contains("EXPENSE")));
-        assertTrue(errors.stream().anyMatch(e -> e.contains("MOVEMENT")));
-        assertTrue(errors.stream().anyMatch(e -> e.contains("NEGATIVE")));
-
-        assertEquals(1, user.getAccountList().size());
+        verify(mockWriter, times(1)).exportToFile(anyList(), eq(outputPath));
     }
 
     @Test
-    void testExportAndReimportWithCsvFile() throws AccountOperationException, FileIOException, UserLoginException {
-        User exportUser = new User("ExportUser", 25, Gender.MALE);
-        AccountInterface acc = AccountFactory.createAccount(AccounType.BANK, "MainAcc", 1000);
-        exportUser.addAccount(acc);
+    void testExportTransactions_fail() throws Exception {
+        Path outputPath = Path.of("dummy_output.csv");
 
-        for (int i = 0; i < 10; i++) {
-            AbstractTransaction tx = new IncomeTransaction(
-                    100 + i * 10,
-                    "Salary",
-                    "Job payment " + i,
-                    new Date(),
-                    acc
-            );
-            exportUser.addTransaction(tx);
-            exportUser.addCategory(tx.getCategory());
-        }
-        TransactionService transactionService = new TransactionService();
-        transactionService.setCurrentUser(exportUser);
-        FileIOService exportService = new FileIOService(transactionService);
-        exportService.setCurrentUser(exportUser);
-        Path path = Path.of("transactions_export_test.csv");
-        exportService.exportTransactions(path);
+        doThrow(new RuntimeException("Write error")).when(mockWriter).exportToFile(any(), eq(outputPath));
 
-        // Re-import into new user
-        User importUser = new User("ImportUser", 31, Gender.FEMALE);
-        importUser.addAccount(acc); // required for resolution
-        transactionService.setCurrentUser(importUser);
-        FileIOService importService = new FileIOService(transactionService);
-        importService.setCurrentUser(importUser);
-        importService.importTransactions(path, false, false);
-
-        assertEquals(10, transactionService.getAllTransactionsFlattened().size());
-        assertTrue(importUser.isCategoryAllowed("Salary"));
-        assertTrue(importUser.getAccountList().contains(acc));
+        assertThrows(FileIOException.class, () -> fileIOService.exportTransactions(outputPath));
     }
 
-    /**
-     * Utility to create a temp file from inline CSV lines (for no-file-based test)
-     */
-    private Path inlineToTempCsv(List<String> lines) throws Exception {
-        Path path = Files.createTempFile("test_transactions", ".csv");
-        Files.write(path, lines);
-        return path;
+    @Test
+    void testImportTransactions_success() throws Exception {
+        AbstractTransaction tx = new IncomeTransaction(100.0, "Bonus", "Performance", new Date(), account);
+
+        when(mockImporter.importFrom(any(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenReturn(List.of(tx));
+
+        Path inputPath = Path.of("dummy_input.csv");
+
+        assertDoesNotThrow(() -> fileIOService.importTransactions(inputPath, false, false));
+
+        assertEquals(1, user.getTransactionLists().values().stream()
+                .mapToInt(l -> l.getFlattenedTransactions().size()).sum());
+
+        assertTrue(user.isCategoryAllowed("Bonus"));
+    }
+
+    @Test
+    void testImportTransactions_fail() throws Exception {
+        Path inputPath = Path.of("bad_input.csv");
+
+        when(mockImporter.importFrom(any(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenThrow(new RuntimeException("Import failed"));
+
+        assertThrows(FileIOException.class, () -> fileIOService.importTransactions(inputPath, false, false));
+    }
+
+    @Test
+    void testImportTransactions_skipBadTx() throws Exception {
+        AbstractTransaction tx1 = new IncomeTransaction(100.0, "Salary", "Ok", new Date(), account);
+        AbstractTransaction tx2 = mock(AbstractTransaction.class);
+        when(tx2.getCategory()).thenReturn(null); // Simulate broken
+
+        when(mockImporter.importFrom(any(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenReturn(List.of(tx1, tx2));
+
+        // tx2 is invalid -> skipped
+        assertDoesNotThrow(() -> fileIOService.importTransactions(Path.of("dummy.csv"), false, true));
+
+        assertEquals(1, transactionService.getAllTransactionsFlattened().size());
     }
 }

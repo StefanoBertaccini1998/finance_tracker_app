@@ -1,19 +1,20 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.FileIOException;
-import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.exception.UserLoginException;
-import it.finance.sb.io.CsvTransactionImporter;
+import it.finance.sb.io.CsvImporter;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
+import it.finance.sb.utility.InputSanitizer;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -22,61 +23,90 @@ public class FileIOService extends BaseService {
     private static final Logger logger = LoggerFactory.getLogger(FileIOService.class);
 
     private final TransactionService transactionService;
+    private final CsvImporter<AbstractTransaction> transactionImporter;
+    private final CsvWriter<AbstractTransaction> transactionWriter;
 
-    public FileIOService(TransactionService transactionService) {
+    public FileIOService(TransactionService transactionService,
+                         CsvImporter<AbstractTransaction> transactionImporter,
+                         CsvWriter<AbstractTransaction> transactionWriter) {
         this.transactionService = transactionService;
+        this.transactionImporter = transactionImporter;
+        this.transactionWriter = transactionWriter;
     }
 
     /**
      * Imports a list of transactions from a CSV file and adds them to the user.
      */
-    public void importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors) throws FileIOException, UserLoginException {
+    public void importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
+            throws FileIOException, UserLoginException {
+
         requireLoggedInUser();
+
+        Map<String, AccountInterface> accountMap = buildAccountLookup();
+        List<String> errorLog = new ArrayList<>();
+
         try {
-            // Map<AccountId, Account>
-            Map<String, AccountInterface> accountMap = getCurrentUser().getAccountList().stream()
-                    .collect(Collectors.toMap(AccountInterface::getName, Function.identity()));
-            List<String> errors = new ArrayList<>();
+            List<AbstractTransaction> imported = transactionImporter.importFrom(
+                    filePath, accountMap, autoCreateAccounts, skipErrors, errorLog
+            );
 
-            List<AbstractTransaction> transactions = CsvTransactionImporter.importTransactions(filePath, accountMap, autoCreateAccounts, skipErrors, errors);
-
-            for (AbstractTransaction transaction : transactions) {
-
-                // Add categories (if not present)
-                if (transaction.getCategory() != null && !getCurrentUser().isCategoryAllowed(transaction.getCategory())) {
-                    getCurrentUser().addCategory(transaction.getCategory());
+            for (AbstractTransaction tx : imported) {
+                try {
+                    InputSanitizer.validate(tx);
+                    updateUserCategoryIfNeeded(tx);
+                    getCurrentUser().addTransaction(tx);
+                } catch (Exception e) {
+                    errorLog.add("❌ Skipped invalid transaction: " + e.getMessage());
+                    logger.warning("[FileIOService] Skipped malformed transaction: " + e.getMessage());
                 }
-                // Add to user's transaction map
-                getCurrentUser().addTransaction(transaction);
             }
 
-            if (!errors.isEmpty()) {
-                logger.warning("[FileIOService] Some lines failed: \n" + String.join("\n", errors));
+            if (!errorLog.isEmpty()) {
+                logger.warning("[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
             }
 
-            logger.info("[FileIOService] Successfully imported " + transactions.size() + " transactions from CSV.");
+            logger.info("[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
 
         } catch (Exception e) {
-            logger.warning("[FileIOService] Import failed: " + e.getMessage());
-            throw new FileIOException("Failed to import transactions: " + e.getMessage(), e);
+            logger.log(Level.SEVERE, "[FileIOService] Failed to import: " + e.getMessage(), e);
+            throw new FileIOException("Failed to import transactions.", e);
         }
     }
 
     /**
-     * Exports a transaction list from the user to a CSV file.
+     * Exports all transactions of current user to CSV.
      */
-    public void exportTransactions(Path path) throws FileIOException, UserLoginException {
+    public void exportTransactions(Path outputPath) throws FileIOException, UserLoginException {
         requireLoggedInUser();
+
         try {
-            CsvWriter<AbstractTransaction> writer = new CsvWriter<>();
             List<AbstractTransaction> allTxs = transactionService.getAllTransactionsFlattened();
-            writer.writeToFile(allTxs, path);
 
-            logger.info("[FileIOService] Exported " + allTxs.size() + " transactions to file: " + path);
+            transactionWriter.exportToFile(allTxs, outputPath);
 
+            logger.info("[FileIOService] Exported " + allTxs.size() + " transactions to: " + outputPath);
         } catch (Exception e) {
-            logger.severe("[FileIOService] Export failed: " + e.getMessage());
+            logger.log(Level.SEVERE, "[FileIOService] Export failed: " + e.getMessage(), e);
             throw new FileIOException("Failed to export transactions.", e);
+        }
+    }
+
+    /**
+     * Build account lookup map from user's account list
+     */
+    private Map<String, AccountInterface> buildAccountLookup() {
+        return getCurrentUser().getAccountList().stream()
+                .collect(Collectors.toMap(AccountInterface::getName, Function.identity()));
+    }
+
+    /**
+     * Auto-add category if not present for the user
+     */
+    private void updateUserCategoryIfNeeded(AbstractTransaction tx) {
+        String category = tx.getCategory();
+        if (category != null && !category.isBlank() && !getCurrentUser().isCategoryAllowed(category)) {
+            getCurrentUser().addCategory(category);
+            logger.info("[FileIOService] Added new category during import: " + category);
         }
     }
 }

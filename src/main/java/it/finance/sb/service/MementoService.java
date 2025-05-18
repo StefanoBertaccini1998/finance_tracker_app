@@ -12,10 +12,19 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * The type Memento service.
+ */
 public class MementoService {
 
     private static final Logger logger = LoggerFactory.getLogger(MementoService.class);
 
+    /**
+     * Save user.
+     *
+     * @param user the user
+     * @throws MementoException the memento exception
+     */
     public void saveUser(User user) throws MementoException {
         if (user == null) throw new IllegalArgumentException("Cannot save null user.");
         try {
@@ -28,6 +37,13 @@ public class MementoService {
         }
     }
 
+    /**
+     * Load user optional.
+     *
+     * @param username the username
+     * @return the optional
+     * @throws MementoException the memento exception
+     */
     public Optional<User> loadUser(String username) throws MementoException {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Username cannot be null or blank.");
@@ -42,10 +58,21 @@ public class MementoService {
         }
     }
 
+    /**
+     * List users list.
+     *
+     * @return the list
+     */
     public List<String> listUsers() {
         return UserMementoManager.listSavedUsers();
     }
 
+    /**
+     * Delete user boolean.
+     *
+     * @param username the username
+     * @return the boolean
+     */
     public boolean deleteUser(String username) {
         try {
             boolean deleted = UserMementoManager.delete(username);

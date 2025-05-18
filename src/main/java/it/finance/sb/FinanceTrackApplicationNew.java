@@ -1,7 +1,8 @@
 package it.finance.sb;
 
-import it.finance.sb.exception.MementoException;
-import it.finance.sb.exception.UserLoginException;
+import it.finance.sb.io.CsvImporter;
+import it.finance.sb.io.CsvTransactionImporter;
+import it.finance.sb.io.CsvWriter;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
@@ -18,16 +19,20 @@ import java.util.List;
 import java.util.Scanner;
 
 public class FinanceTrackApplicationNew {
+
+    // Services
     private static final TransactionService transactionService = new TransactionService();
     private static final UserService userService = new UserService();
     private static final AccountService accountService = new AccountService(transactionService);
-    private static final FileIOService fileIOService = new FileIOService(transactionService);
+    private static final CsvImporter<AbstractTransaction> importer = new CsvTransactionImporter();
+    private static final CsvWriter<AbstractTransaction> writer = new CsvWriter<>("TransactionId,Type,Amount,From,To,Category,Reason,Date");
+    private static final FileIOService fileIOService = new FileIOService(transactionService, importer, writer);
     private static final InvestmentService investmentService = new InvestmentService(accountService, userService);
     private static final MementoService mementoService = new MementoService();
 
     private static User currentUser;
 
-    public static void main(String[] args) throws UserLoginException {
+    public static void main(String[] args) {
         System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
         loginUser();
         showMainMenu();
@@ -37,63 +42,50 @@ public class FinanceTrackApplicationNew {
     private static void loginUser() {
         System.out.println(ConsoleStyle.section("🔐 Load or Create User"));
 
-        int choice = ConsoleUtils.showMenu("User Login",
-                "Load existing user",
-                "Create new user");
-
+        int choice = ConsoleUtils.showMenu("User Login", "Load existing user", "Create new user");
         if (choice == 1) {
             List<String> savedUsers = mementoService.listUsers();
             if (savedUsers.isEmpty()) {
-                System.out.println(ConsoleStyle.warning("⚠️ No saved users found. Switching to new user creation."));
+                System.out.println(ConsoleStyle.warning("⚠️ No saved users found."));
                 createNewUser();
             } else {
                 int selected = ConsoleUtils.showMenu("Select a saved user", savedUsers.toArray(new String[0]));
-                String username = savedUsers.get(selected - 1);
-
                 try {
-                    mementoService.loadUser(username).ifPresentOrElse(user -> {
+                    mementoService.loadUser(savedUsers.get(selected - 1)).ifPresentOrElse(user -> {
                         currentUser = user;
-                        System.out.println(ConsoleStyle.success("✅ Loaded user: " + currentUser.getName()));
-                    }, () -> {
-                        System.out.println(ConsoleStyle.error("❌ Could not load user. Creating new one."));
-                        createNewUser();
-                    });
-                } catch (MementoException e) {
-                    System.out.println(ConsoleStyle.error("❌ Error during loading the user. See logs for details."));
+                        System.out.println(ConsoleStyle.success("✅ Loaded user: " + user.getName()));
+                    }, () -> createNewUser());
+                } catch (Exception e) {
+                    System.out.println(ConsoleStyle.error("❌ Failed to load user: " + e.getMessage()));
                 }
             }
-
         } else {
             createNewUser();
         }
 
-        // Bind user to services
+        // Set current user on all services
         userService.setCurrentUser(currentUser);
         accountService.setCurrentUser(currentUser);
-        investmentService.setCurrentUser(currentUser);
         transactionService.setCurrentUser(currentUser);
         fileIOService.setCurrentUser(currentUser);
+        investmentService.setCurrentUser(currentUser);
     }
 
-    //Mememento helper
     private static void createNewUser() {
-        String name = ConsoleUtils.prompt("Enter your name", false);
-        int age = Integer.parseInt(ConsoleUtils.prompt("Enter your age", false));
-        Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
-
-//TODO catch different exception
         try {
+            String name = ConsoleUtils.prompt("Enter your name", false);
+            int age = Integer.parseInt(ConsoleUtils.prompt("Enter your age", false));
+            Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
             currentUser = userService.create(name, age, gender);
             mementoService.saveUser(currentUser);
             System.out.println(ConsoleStyle.success("💾 User created successfully!"));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Could not save user. See logs for details."));
+            System.out.println(ConsoleStyle.error("❌ Failed to create user: " + e.getMessage()));
         }
     }
 
-    private static void showMainMenu() throws UserLoginException {
+    private static void showMainMenu() {
         boolean running = true;
-
         while (running) {
             int choice = ConsoleUtils.showMenu("Main Menu",
                     "Manage Accounts",
@@ -107,279 +99,209 @@ public class FinanceTrackApplicationNew {
                 case 1 -> showAccountMenu();
                 case 2 -> {
                     if (currentUser.getAccountList().isEmpty()) {
-                        System.out.println(ConsoleStyle.warning("You must create an account first."));
+                        System.out.println(ConsoleStyle.warning("⚠️ No accounts available. Please create one."));
                     } else {
                         showTransactionMenu();
                     }
                 }
                 case 3 -> showCsvMenu();
-                case 4 -> investmentService.showInvestmentMenu();
+                case 4 -> System.out.println(ConsoleStyle.warning("⚠️ Feature will be implemented."));//investmentService.showInvestmentMenu();
                 case 5 -> {
                     try {
                         mementoService.saveUser(currentUser);
-                        System.out.println(ConsoleStyle.success("💾 User saved successfully!"));
+                        System.out.println(ConsoleStyle.success("✅ User saved!"));
                     } catch (Exception e) {
-                        System.out.println(ConsoleStyle.error("❌ Could not save user. See logs for details."));
+                        System.out.println(ConsoleStyle.error("❌ Failed to save user: " + e.getMessage()));
                     }
                 }
-                case 6 -> {
-                    running = false;
-                    System.out.println(ConsoleStyle.info("Exiting FinanceTrack..."));
-                }
+                case 6 -> running = false;
                 default -> System.out.println(ConsoleStyle.error("Invalid option."));
             }
         }
     }
 
-    //Account helpers flow
+    // ===================== ACCOUNT MENU =====================
     private static void showAccountMenu() {
         boolean running = true;
         while (running) {
             int choice = ConsoleUtils.showMenu("Account Menu",
                     "View Accounts",
-                    "Create New Account",
+                    "Create Account",
                     "Update Account",
                     "Delete Account",
-                    "Back to Main Menu");
+                    "Back");
 
             switch (choice) {
-                case 1 -> {
-                    if (currentUser.getAccountList().isEmpty()) {
-                        System.out.println(ConsoleStyle.warning("No accounts found. Please create one."));
-                    } else {
-                        accountService.displayAllAccount();
-                        System.out.println(ConsoleStyle.info("Press Enter to continue..."));
-                        new Scanner(System.in).nextLine();
-                    }
-                }
+                case 1 -> accountService.displayAllAccount();
                 case 2 -> createNewAccount();
-                case 3 -> performAccountUpdate();
+                case 3 -> updateAccount();
                 case 4 -> deleteAccount();
                 case 5 -> running = false;
-                default -> System.out.println(ConsoleStyle.error("Invalid option. Try again."));
             }
         }
     }
 
     private static void createNewAccount() {
-        System.out.println(ConsoleStyle.section("Create New Account"));
-
-        String name = ConsoleUtils.prompt("Account name", false);
-        Double balance = ConsoleUtils.promptForDouble("Initial balance", false);
-        AccounType type = ConsoleUtils.selectEnum(AccounType.class, "Account Type", false);
-
         try {
-            AccountInterface account = accountService.create(type, name, balance);
-            System.out.println(ConsoleStyle.success("✅ Created: " + account));
+            String name = ConsoleUtils.prompt("Account name", false);
+            Double balance = ConsoleUtils.promptForDouble("Initial balance", false);
+            AccounType type = ConsoleUtils.selectEnum(AccounType.class, "Account Type", false);
+            AccountInterface acc = accountService.create(type, name, balance);
+            System.out.println(ConsoleStyle.success("✅ Created: " + acc));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Error: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Could not create account. Please review your inputs."));
         }
     }
 
-    private static AccountInterface getAccountId(String label, boolean canEmpty, AccountInterface exclude) {
-        accountService.displayAllAccount(exclude);
-        String input = ConsoleUtils.prompt("Enter " + label + " Account ID", canEmpty);
 
-        if (input.isBlank() && canEmpty) return null;
-
+    private static void updateAccount() {
         try {
-            int index = Integer.parseInt(input.trim()) - 1;
-            AccountInterface selected = currentUser.getAccountList().get(index);
-
-            if (selected.equals(exclude)) {
-                System.out.println(ConsoleStyle.warning("You can't select the same account for both FROM and TO."));
-                return getAccountId(label, canEmpty, exclude);
-            }
-
-            return selected;
+            AccountInterface acc = getAccount("account to update");
+            String newName = ConsoleUtils.prompt("New name (blank to skip)", true);
+            AccounType newType = ConsoleUtils.selectEnum(AccounType.class, "New Type", true);
+            Double newBalance = ConsoleUtils.promptForDouble("New balance (blank to skip)", true);
+            accountService.modify(acc, newType, newName, newBalance);
+            System.out.println(ConsoleStyle.success("✅ Account updated successfully."));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("Invalid account ID."));
-            return getAccountId(label, canEmpty, exclude);
-        }
-    }
-
-    private static void performAccountUpdate() {
-        System.out.println(ConsoleStyle.section("Update Account"));
-
-        AccountInterface account = getAccountId(" ", false, null);
-        String newName = ConsoleUtils.prompt("New name (or leave blank)", true);
-        AccounType newType = ConsoleUtils.selectEnum(AccounType.class, "New Account Type", true);
-        Double newBalance = ConsoleUtils.promptForDouble("New balance", true);
-
-        try {
-            accountService.modify(account, newType, newName, newBalance);
-            System.out.println(ConsoleStyle.success("✅ Updated: " + account));
-        } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Error updating account: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Could not update account. Make sure values are valid."));
         }
     }
 
     private static void deleteAccount() {
-        System.out.println(ConsoleStyle.section("Delete Account"));
-
-        AccountInterface account = getAccountId(" ", false, null);
         try {
-            AccountInterface deleted = accountService.delete(account);
-            System.out.println(ConsoleStyle.success("✅ Deleted: " + deleted));
+            AccountInterface acc = getAccount("account to delete");
+            accountService.delete(acc);
+            System.out.println(ConsoleStyle.success("✅ Account deleted."));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Error deleting account: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Could not delete account. Please try again."));
         }
     }
 
-    // Transaction Helper
+    // ===================== TRANSACTIONS =====================
     private static void showTransactionMenu() {
         boolean running = true;
         while (running) {
             int choice = ConsoleUtils.showMenu("Transaction Menu",
-                    "View All Transactions",
-                    "Add Transaction",
-                    "Modify Transaction",
+                    "View Transactions",
+                    "Create Transaction",
+                    "Update Transaction",
                     "Delete Transaction",
-                    "Back to Main Menu");
+                    "Back");
 
             switch (choice) {
                 case 1 -> transactionService.displayAllTransactions();
-                case 2 -> createTransactionCLI();
-                case 3 -> performTransactionUpdate();
+                case 2 -> createTransaction();
+                case 3 -> updateTransaction();
                 case 4 -> deleteTransaction();
                 case 5 -> running = false;
-                default -> System.out.println(ConsoleStyle.error("Invalid choice."));
             }
         }
     }
 
-    private static void createTransactionCLI() {
-        System.out.println(ConsoleStyle.section("Create Transaction"));
-
-        TransactionType type = ConsoleUtils.selectEnum(TransactionType.class, "Transaction Type", false);
-        Double amount = ConsoleUtils.promptForDouble("Amount", false);
-        String category = ConsoleUtils.selectOrCreateCategory(currentUser.getSortedCategories(), false);
-        if (category != null && !currentUser.isCategoryAllowed(category)) {
-            userService.addCategory(category);
-            System.out.println(ConsoleStyle.info("📁 New category added: " + category));
-        }
-        String reason = ConsoleUtils.prompt("Reason", false);
-        AccountInterface[] accounts = getTransactionAccount(type, false);
-
+    private static void createTransaction() {
         try {
-            transactionService.create(type, amount, category, reason, new Date(), accounts[0], accounts[1]);
-            System.out.println(ConsoleStyle.success("Transaction created successfully."));
+            TransactionType type = ConsoleUtils.selectEnum(TransactionType.class, "Transaction Type", false);
+            Double amount = ConsoleUtils.promptForDouble("Amount", false);
+            String category = ConsoleUtils.selectOrCreateCategory(currentUser.getSortedCategories(), false);
+            String reason = ConsoleUtils.prompt("Reason", false);
+            AccountInterface[] acc = getTransactionAccounts(type);
+            transactionService.create(type, amount, category, reason, new Date(), acc[0], acc[1]);
+            System.out.println(ConsoleStyle.success("✅ Transaction created."));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("Error: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Failed to create transaction. Make sure input is valid."));
         }
     }
 
-    private static AccountInterface[] getTransactionAccount(TransactionType type, boolean canEmpty) {
-        AccountInterface from = null, to = null;
-
-        if (type == TransactionType.INCOME) {
-            to = getAccountId("TO", canEmpty, null);
-        } else if (type == TransactionType.EXPENSE) {
-            from = getAccountId("FROM", canEmpty, null);
-        } else if (type == TransactionType.MOVEMENT) {
-            from = getAccountId("FROM", canEmpty, null);
-            to = getAccountId("TO", canEmpty, from);
-        }
-
-        return new AccountInterface[]{to, from};
-    }
-
-    private static void performTransactionUpdate() {
-        System.out.println(ConsoleStyle.section("Update Transaction"));
-
-        AbstractTransaction transaction = getTransactionId(" ");
-
-        Double newAmount = ConsoleUtils.promptForDouble("New amount", true);
-        String newCategory = ConsoleUtils.selectOrCreateCategory(currentUser.getSortedCategories(), true);
-        String newReason = ConsoleUtils.prompt("New reason", true);
-        AccountInterface[] accounts = getTransactionAccount(transaction.getType(), true);
-
+    private static void updateTransaction() {
         try {
-            transactionService.modify(transaction, newAmount, newCategory, newReason, new Date(), accounts[0], accounts[1]);
-            System.out.println(ConsoleStyle.success("✅ Transaction updated: " + transaction));
+            AbstractTransaction tx = getTransaction("to update");
+            Double newAmount = ConsoleUtils.promptForDouble("New amount (blank to skip)", true);
+            String newCategory = ConsoleUtils.selectOrCreateCategory(currentUser.getSortedCategories(), true);
+            String newReason = ConsoleUtils.prompt("New reason (blank to skip)", true);
+            AccountInterface[] acc = getTransactionAccounts(tx.getType());
+            transactionService.modify(tx, newAmount, newCategory, newReason, new Date(), acc[0], acc[1]);
+            System.out.println(ConsoleStyle.success("✅ Transaction updated."));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Failed to update transaction: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Could not update transaction."));
         }
     }
 
     private static void deleteTransaction() {
-        System.out.println(ConsoleStyle.section("Delete Transaction"));
-
-        AbstractTransaction tx = getTransactionId(" ");
         try {
+            AbstractTransaction tx = getTransaction("to delete");
             transactionService.delete(tx);
-            System.out.println(ConsoleStyle.success("✅ Transaction deleted: " + tx));
+            System.out.println(ConsoleStyle.success("✅ Transaction deleted."));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Failed to delete transaction: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Could not delete transaction."));
         }
     }
 
-    private static AbstractTransaction getTransactionId(String label) {
-        transactionService.displayAllTransactions();
-
-        String input = ConsoleUtils.prompt("Enter" + label + " transaction ID", false);
-        try {
-            int index = Integer.parseInt(input.trim()) - 1;
-            return transactionService.getAllTransactionsFlattened().get(index);
-        } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("Invalid transaction ID."));
-            return getTransactionId(label);
-        }
-    }
-
-    //File IO helper
+    // ===================== FILE IO =====================
     private static void showCsvMenu() {
         Scanner scanner = new Scanner(System.in);
         boolean running = true;
 
         while (running) {
-            System.out.println(ConsoleStyle.menuTitle("CSV Import/Export"));
-            System.out.println("1️⃣  Import Transactions from CSV");
-            System.out.println("2️⃣  Export Transactions to CSV");
-            System.out.println("3️⃣  Back to Main Menu");
-            System.out.print("Select an option: ");
+            System.out.println(ConsoleStyle.menuTitle("CSV Menu"));
+            System.out.println("1️⃣  Import Transactions");
+            System.out.println("2️⃣  Export Transactions");
+            System.out.println("3️⃣  Back");
 
-            switch (scanner.nextLine()) {
-                case "1" -> handleCsvImport(scanner);
-                case "2" -> handleCsvExport(scanner);
+            switch (scanner.nextLine().trim()) {
+                case "1" -> importTransactions();
+                case "2" -> exportTransactions();
                 case "3" -> running = false;
-                default -> System.out.println(ConsoleStyle.warning("Invalid option. Try again."));
             }
         }
     }
 
-    private static void handleCsvImport(Scanner scanner) {
-        System.out.println(ConsoleStyle.section("📥 Import Transactions from CSV"));
-
-        System.out.print("Enter path to CSV file: ");
-        String pathStr = scanner.nextLine();
-
-        System.out.print("Auto-create missing accounts? (y/n): ");
-        boolean autoCreate = scanner.nextLine().trim().equalsIgnoreCase("y");
-
-        System.out.print("Skip bad lines? (y/n): ");
-        boolean skipErrors = scanner.nextLine().trim().equalsIgnoreCase("y");
-
+    private static void importTransactions() {
         try {
-            fileIOService.importTransactions(Path.of(pathStr), autoCreate, skipErrors);
-            System.out.println(ConsoleStyle.success("✅ Transactions imported successfully!"));
+            Path path = Path.of(ConsoleUtils.prompt("Enter CSV path", false));
+            boolean autoCreate = ConsoleUtils.prompt("Auto-create missing accounts? (y/n)", false).equalsIgnoreCase("y");
+            boolean skipErrors = ConsoleUtils.prompt("Skip errors? (y/n)", false).equalsIgnoreCase("y");
+            fileIOService.importTransactions(path, autoCreate, skipErrors);
+            System.out.println(ConsoleStyle.success("✅ Transactions imported."));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Import failed: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Failed to import. Check file path and content format."));
         }
     }
 
-    private static void handleCsvExport(Scanner scanner) {
-        System.out.println(ConsoleStyle.section("📤 Export Transactions to CSV"));
-
-        System.out.print("Enter path to export file (e.g., `output.csv`): ");
-        String pathStr = scanner.nextLine();
-
+    private static void exportTransactions() {
         try {
-            fileIOService.exportTransactions(Path.of(pathStr));
-            System.out.println(ConsoleStyle.success("✅ Transactions exported successfully to " + pathStr));
+            Path path = Path.of(ConsoleUtils.prompt("Enter output CSV path", false));
+            fileIOService.exportTransactions(path);
+            System.out.println(ConsoleStyle.success("✅ Export completed to: " + path));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Export failed: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Could not export transactions. Verify output path."));
         }
     }
 
+    // ===================== HELPERS =====================
+    private static AccountInterface getAccount(String label) {
+        accountService.displayAllAccount();
+        String input = ConsoleUtils.prompt("Enter " + label + " index", false);
+        int index = Integer.parseInt(input.trim()) - 1;
+        return currentUser.getAccountList().get(index);
+    }
+
+    private static AbstractTransaction getTransaction(String label) {
+        List<AbstractTransaction> txs = transactionService.getAllTransactionsFlattened();
+        for (int i = 0; i < txs.size(); i++) {
+            System.out.println((i + 1) + ". " + txs.get(i));
+        }
+        String input = ConsoleUtils.prompt("Enter transaction " + label + " index", false);
+        return txs.get(Integer.parseInt(input.trim()) - 1);
+    }
+
+    private static AccountInterface[] getTransactionAccounts(TransactionType type) {
+        AccountInterface from = null, to = null;
+        if (type == TransactionType.INCOME) to = getAccount("destination");
+        if (type == TransactionType.EXPENSE) from = getAccount("source");
+        if (type == TransactionType.MOVEMENT) {
+            from = getAccount("source");
+            to = getAccount("destination");
+        }
+        return new AccountInterface[]{to, from};
+    }
 }

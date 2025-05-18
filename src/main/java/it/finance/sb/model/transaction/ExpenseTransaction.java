@@ -58,12 +58,4 @@ public class ExpenseTransaction extends AbstractTransaction {
     public String toCsv() {
         return formatCsvLine(fromAccount.getName(), null, category, reason, date.getTime());
     }
-
-    public static ExpenseTransaction fromCsv(String[] fields, AccountInterface from) throws Exception {
-        double amount = Double.parseDouble(fields[2]);
-        String category = fields[5];
-        String reason = fields[6];
-        Date date = new Date(Long.parseLong(fields[7]));
-        return new ExpenseTransaction(amount, category, reason, date, from);
-    }
 }

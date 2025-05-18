@@ -33,14 +33,12 @@
         </dependency>
 
         <!--  Mockito to use it later -->
-        <!--
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
-        -->
     </dependencies>
 
     <build>
