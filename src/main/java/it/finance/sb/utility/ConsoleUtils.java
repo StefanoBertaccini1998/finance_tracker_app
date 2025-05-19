@@ -72,7 +72,7 @@ public class ConsoleUtils {
         }
 
         String input = prompt("Enter category", allowEmpty);
-        if (input.isBlank()) return allowEmpty ? null : selectOrCreateCategory(existing, allowEmpty);
+        if (input.isBlank()) return allowEmpty ? null : selectOrCreateCategory(existing, false);
 
         try {
             int index = Integer.parseInt(input);

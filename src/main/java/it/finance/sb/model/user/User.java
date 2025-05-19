@@ -21,6 +21,7 @@ public class User {
     private final int userId;
     @Sanitize(notBlank = true, maxLength = 50)
     private String name;
+    @Sanitize(positiveNumber = true)
     private int age;
     private Gender gender;
     private final Map<TransactionType, TransactionList> transactionLists = new EnumMap<>(TransactionType.class);

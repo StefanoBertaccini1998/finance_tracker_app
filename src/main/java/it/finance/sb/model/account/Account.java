@@ -14,7 +14,7 @@ public class Account implements AccountInterface {
     @Sanitize(notBlank = true, maxLength = 30)
     private String name;
 
-    @Sanitize(notBlank = true)
+    @Sanitize(positiveNumber = true)
     private double balance;
 
     private AccounType type;

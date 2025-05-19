@@ -32,6 +32,7 @@ public abstract class AbstractTransaction implements CompositeTransaction, CsvSe
     /**
      * The Date.
      */
+    @Sanitize(nonNull = true)
     protected Date date;
     /**
      * The Category.

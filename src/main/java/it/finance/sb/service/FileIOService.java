@@ -23,13 +23,16 @@ public class FileIOService extends BaseService {
     private static final Logger logger = LoggerFactory.getLogger(FileIOService.class);
 
     private final TransactionService transactionService;
+    private final UserService userService;
     private final CsvImporter<AbstractTransaction> transactionImporter;
     private final CsvWriter<AbstractTransaction> transactionWriter;
 
     public FileIOService(TransactionService transactionService,
+                         UserService userService,
                          CsvImporter<AbstractTransaction> transactionImporter,
                          CsvWriter<AbstractTransaction> transactionWriter) {
         this.transactionService = transactionService;
+        this.userService = userService;
         this.transactionImporter = transactionImporter;
         this.transactionWriter = transactionWriter;
     }
@@ -102,10 +105,10 @@ public class FileIOService extends BaseService {
     /**
      * Auto-add category if not present for the user
      */
-    private void updateUserCategoryIfNeeded(AbstractTransaction tx) {
+    private void updateUserCategoryIfNeeded(AbstractTransaction tx) throws UserLoginException {
         String category = tx.getCategory();
         if (category != null && !category.isBlank() && !getCurrentUser().isCategoryAllowed(category)) {
-            getCurrentUser().addCategory(category);
+            userService.addCategory(category);
             logger.info("[FileIOService] Added new category during import: " + category);
         }
     }

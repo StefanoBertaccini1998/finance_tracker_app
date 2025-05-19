@@ -16,4 +16,8 @@ public @interface Sanitize {
     boolean dateMustBePast() default false;
 
     boolean dateMustBeFuture() default false;
+
+    double min() default Double.NEGATIVE_INFINITY;
+
+    double max() default Double.POSITIVE_INFINITY;
 }

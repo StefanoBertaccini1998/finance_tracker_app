@@ -100,13 +100,16 @@ public class UserService extends BaseService {
      *
      * @param category the category
      */
-    public void addCategory(String category) {
+    public void addCategory(String category) throws UserLoginException {
+        requireLoggedInUser();
         if (category == null || category.isBlank()) {
-            logger.warning("[UserService] Rejected blank category");
+            logger.warning("[UserService] Rejected blank category.");
             return;
         }
-        getCurrentUser().addCategory(category);
-        logger.info("[UserService] Added category '" + category + "' for user " + getCurrentUser().getName());
+        if (!currentUser.isCategoryAllowed(category)) {
+            currentUser.addCategory(category);
+            logger.info("[UserService] Added category: '" + category + "'");
+        }
     }
 
 }

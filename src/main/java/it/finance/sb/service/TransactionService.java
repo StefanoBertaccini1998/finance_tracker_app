@@ -190,34 +190,6 @@ public class TransactionService extends BaseService {
     }
 
     /**
-     * Display all transactions for the current user (flattened list).
-     */
-    //TODO move away
-    public void displayAllTransactions() {
-        User user = getCurrentUser();
-        logger.info("[UserService] Showing all transactions for user '" + user.getName() + "'");
-
-        List<AbstractTransaction> transactions = getAllTransactionsFlattened();
-
-        if (transactions.isEmpty()) {
-            System.out.println("⚠️ No transactions found.");
-            return;
-        }
-
-        System.out.println("\n📋 All Transactions:");
-        for (AbstractTransaction tx : transactions) {
-            System.out.printf("  ➤ ID: %-4d | 💰 Amount: %-8.2f | 📌 Category: %-12s | 📃 Reason: %-20s | 📅 Date: %s | Type: %s\n",
-                    tx.getTransactionId(),
-                    tx.getAmount(),
-                    tx.getCategory(),
-                    tx.getReason(),
-                    tx.getDate(),
-                    tx.getType().name()
-            );
-        }
-    }
-
-    /**
      * Gets all transactions.
      *
      * @return the all transactions
