@@ -8,7 +8,6 @@ import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.iterator.TransactionIterator;
 import it.finance.sb.model.transaction.*;
-import it.finance.sb.model.user.User;
 import it.finance.sb.utility.InputSanitizer;
 
 import java.util.*;
@@ -20,12 +19,14 @@ import java.util.logging.Logger;
  */
 public class TransactionService extends BaseService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
+    private final Logger logger = LoggerFactory.getInstance().getLogger(TransactionService.class);
+    private final UserService userService;
 
     /**
      * Instantiates a new Transaction service.
      */
-    public TransactionService() {
+    public TransactionService(UserService userService) {
+        this.userService = userService;
     }
 
     /**
@@ -66,6 +67,7 @@ public class TransactionService extends BaseService {
 
             InputSanitizer.validate(transaction);
             getCurrentUser().addTransaction(transaction);
+            userService.addCategory(category);
 
             logger.info("[TransactionService] Created transaction: ID=" + transaction.getTransactionId());
             return transaction;

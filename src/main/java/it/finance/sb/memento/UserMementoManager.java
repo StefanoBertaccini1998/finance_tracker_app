@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class UserMementoManager {
     private static final String SAVE_DIR = "saved_users";
     private static final ObjectMapper mapper;
-    private static final Logger logger = LoggerFactory.getLogger(UserMementoManager.class);
+    private static final Logger logger = LoggerFactory.getInstance().getLogger(UserMementoManager.class);
 
     static {
         mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);

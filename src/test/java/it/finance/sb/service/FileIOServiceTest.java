@@ -1,7 +1,6 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.FileIOException;
-import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.io.CsvImporter;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.model.account.AccounType;
@@ -17,7 +16,6 @@ import org.mockito.Mockito;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,6 +23,7 @@ import static org.mockito.Mockito.*;
 public class FileIOServiceTest {
 
     private TransactionService transactionService;
+    private UserService userService;
     private CsvImporter<AbstractTransaction> mockImporter;
     private CsvWriter<AbstractTransaction> mockWriter;
     private FileIOService fileIOService;
@@ -34,16 +33,18 @@ public class FileIOServiceTest {
 
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionService();
+        user = new User("TestUser", 30, Gender.OTHER);
+        userService = new UserService();
+        transactionService = new TransactionService(userService);
         mockImporter = Mockito.mock(CsvImporter.class);
         mockWriter = Mockito.mock(CsvWriter.class);
 
-        fileIOService = new FileIOService(transactionService, mockImporter, mockWriter);
+        fileIOService = new FileIOService(transactionService,userService, mockImporter, mockWriter);
 
-        user = new User("TestUser", 30, Gender.OTHER);
         account = new it.finance.sb.model.account.Account("TestAccount", 1000, AccounType.BANK);
         user.addAccount(account);
 
+        userService.setCurrentUser(user);
         fileIOService.setCurrentUser(user);
         transactionService.setCurrentUser(user);
     }
@@ -80,7 +81,7 @@ public class FileIOServiceTest {
 
         Path inputPath = Path.of("dummy_input.csv");
 
-        assertDoesNotThrow(() -> fileIOService.importTransactions(inputPath, false, false));
+        assertDoesNotThrow(() -> fileIOService.importTransactions(inputPath, true, true));
 
         assertEquals(1, user.getTransactionLists().values().stream()
                 .mapToInt(l -> l.getFlattenedTransactions().size()).sum());

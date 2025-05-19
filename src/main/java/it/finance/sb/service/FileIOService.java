@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public class FileIOService extends BaseService {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileIOService.class);
+    private static final Logger logger = LoggerFactory.getInstance().getLogger(FileIOService.class);
 
     private final TransactionService transactionService;
     private final UserService userService;

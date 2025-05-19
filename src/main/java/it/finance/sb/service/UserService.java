@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  */
 public class UserService extends BaseService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final Logger logger = LoggerFactory.getInstance().getLogger(UserService.class);
 
     /**
      * Create user.

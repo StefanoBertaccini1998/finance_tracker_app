@@ -21,8 +21,8 @@ import java.util.Scanner;
 public class FinanceTrackApplication {
 
     // Services
-    private static final TransactionService transactionService = new TransactionService();
     private static final UserService userService = new UserService();
+    private static final TransactionService transactionService = new TransactionService(userService);
     private static final AccountService accountService = new AccountService(transactionService);
     private static final CsvImporter<AbstractTransaction> importer = new CsvTransactionImporter();
     private static final CsvWriter<AbstractTransaction> writer = new CsvWriter<>("TransactionId,Type,Amount,From,To,Category,Reason,Date");

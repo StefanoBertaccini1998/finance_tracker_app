@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class MementoService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MementoService.class);
+    private static final Logger logger = LoggerFactory.getInstance().getLogger(MementoService.class);
 
     /**
      * Save user.

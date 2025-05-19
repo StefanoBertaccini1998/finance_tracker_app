@@ -15,13 +15,16 @@ import static org.junit.jupiter.api.Assertions.*;
 class AccountServiceTest {
 
     private AccountService accountService;
+    private UserService userService;
     private TransactionService transactionService;
     private User user;
 
     @BeforeEach
     void setUp() {
         user = new User("TestUser", 26, Gender.MALE);
-        transactionService = new TransactionService();
+        userService = new UserService();
+        userService.setCurrentUser(user);
+        transactionService = new TransactionService(userService);
         transactionService.setCurrentUser(user);
         accountService = new AccountService(transactionService);
         accountService.setCurrentUser(user);

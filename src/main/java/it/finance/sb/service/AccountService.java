@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class AccountService extends BaseService {
 
     private final TransactionService transactionService;
-    private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
+    private static final Logger logger = LoggerFactory.getInstance().getLogger(AccountService.class);
 
     /**
      * Instantiates a new Account service.

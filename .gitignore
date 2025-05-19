@@ -31,3 +31,5 @@ bin/
 ### ADD
 .idea
 /target
+/log
+/saved_users

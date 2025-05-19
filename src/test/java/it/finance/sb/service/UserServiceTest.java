@@ -3,15 +3,12 @@ package it.finance.sb.service;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
-import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
-import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
 import org.junit.jupiter.api.*;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +26,7 @@ class UserServiceTest {
     void setUp() throws Exception {
         userService = new UserService();
         user = userService.create("Alice", 30, Gender.FEMALE);
-        transactionService = new TransactionService();
+        transactionService = new TransactionService(userService);
         transactionService.setCurrentUser(user);
 
         accountService = new AccountService(transactionService);

@@ -17,6 +17,7 @@ class TransactionServiceTest {
 
     private TransactionService transactionService;
     private AccountService accountService;
+    private UserService userService;
     private User user;
 
     private AccountInterface acc1;
@@ -24,9 +25,10 @@ class TransactionServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        user = new User("TestUser",99, Gender.OTHER);
-
-        transactionService = new TransactionService();
+        user = new User("TestUser", 99, Gender.OTHER);
+        userService = new UserService();
+        userService.setCurrentUser(user);
+        transactionService = new TransactionService(userService);
         transactionService.setCurrentUser(user);
         accountService = new AccountService(transactionService);
         accountService.setCurrentUser(user);
@@ -37,7 +39,7 @@ class TransactionServiceTest {
 
     @Test
     void testCreateIncomeTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 200, "Salary","April work", new Date(), acc1, null);
+        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 200, "Salary", "April work", new Date(), acc1, null);
 
         assertEquals(1200, acc1.getBalance());
         assertTrue(user.getTransactionLists().get(TransactionType.INCOME).iterator().hasNext());
@@ -69,13 +71,13 @@ class TransactionServiceTest {
     @Test
     void testCreateExpenseWithInsufficientFunds() {
         Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.create(EXPENSE, 9999, "Too much","Too much", new Date(), null, acc2);
+            transactionService.create(EXPENSE, 9999, "Too much", "Too much", new Date(), null, acc2);
         });
     }
 
     @Test
     void testDeleteIncomeTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 100, "Refund","riento pezzo rotto", new Date(), acc1, null);
+        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 100, "Refund", "riento pezzo rotto", new Date(), acc1, null);
         assertEquals(1100, acc1.getBalance());
 
         transactionService.delete(transaction);
@@ -84,7 +86,7 @@ class TransactionServiceTest {
 
     @Test
     void testDeleteExpenseTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(EXPENSE, 200, "Utilities","Gamepad", new Date(), null, acc1);
+        AbstractTransaction transaction = transactionService.create(EXPENSE, 200, "Utilities", "Gamepad", new Date(), null, acc1);
         assertEquals(800, acc1.getBalance());
 
         transactionService.delete(transaction);
@@ -93,7 +95,7 @@ class TransactionServiceTest {
 
     @Test
     void testModifyTransaction() throws Exception {
-        AbstractTransaction original = transactionService.create(EXPENSE, 100, "Lunch","pranzo di pasqua", new Date(), null, acc1);
+        AbstractTransaction original = transactionService.create(EXPENSE, 100, "Lunch", "pranzo di pasqua", new Date(), null, acc1);
         assertEquals(900, acc1.getBalance());
 
         AbstractTransaction modified = transactionService.modify(
@@ -112,10 +114,10 @@ class TransactionServiceTest {
 
     @Test
     void testModifyWithInsufficientFunds() throws Exception {
-        AbstractTransaction original = transactionService.create(EXPENSE, 100, "Lunch","Meeting lunch", new Date(), null, acc2);
+        AbstractTransaction original = transactionService.create(EXPENSE, 100, "Lunch", "Meeting lunch", new Date(), null, acc2);
 
         Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.modify(original, 9999.0, "Dinner","Meeting Dinner", new Date(), null, acc2);
+            transactionService.modify(original, 9999.0, "Dinner", "Meeting Dinner", new Date(), null, acc2);
         });
     }
 }
