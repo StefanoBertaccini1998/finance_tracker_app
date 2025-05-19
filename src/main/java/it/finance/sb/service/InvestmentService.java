@@ -153,7 +153,7 @@ public class InvestmentService extends BaseService {
                     String report = generateProjectionReport(accountId, interestRate, years, monthlyDeposit);
                     System.out.println("\n" + report);
                 } catch (Exception e) {
-                    System.out.println("Error generating projection: " + e.getMessage());
+                    System.out.println("Error generating projection");
                 }
 
                 System.out.println("\nPress Enter to continue...");

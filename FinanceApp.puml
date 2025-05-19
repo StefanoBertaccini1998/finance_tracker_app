@@ -1,0 +1,131 @@
+@startuml FinanceTrackApp
+
+skinparam classAttributeIconSize 0
+skinparam style strictuml
+
+package "Model" {
+    class User {
+        - int userId
+        - String name
+        - int age
+        - Gender gender
+        - Map<TransactionType, TransactionList> transactionLists
+        - List<AccountInterface> accountList
+        - Set<String> categorySet
+    }
+
+    class AbstractTransaction {
+        - int transactionId
+        - double amount
+        - String reason
+        - String category
+        - Date date
+        - TransactionType type
+    }
+
+    class IncomeTransaction
+    class ExpenseTransaction
+    class MovementTransaction
+
+    AbstractTransaction <|-- IncomeTransaction
+    AbstractTransaction <|-- ExpenseTransaction
+    AbstractTransaction <|-- MovementTransaction
+
+    class TransactionList {
+        - List<AbstractTransaction> transactions
+        + addTransaction()
+        + remove()
+        + getFlattenedTransactions()
+    }
+
+    class Account {
+        - int accountId
+        - String name
+        - double balance
+        - AccounType type
+    }
+
+    interface AccountInterface
+
+    AccountInterface <|.. Account
+    User "1" o-- "many" AccountInterface
+    User "1" o-- "many" TransactionList
+    TransactionList "1" o-- "*" AbstractTransaction
+}
+
+package "Services" {
+    class BaseService {
+        - User currentUser
+        + setCurrentUser()
+        + getCurrentUser()
+    }
+
+    class UserService
+    class AccountService
+    class TransactionService
+    class FileIOService
+    class InvestmentService
+    class MementoService
+
+    BaseService <|-- UserService
+    BaseService <|-- AccountService
+    BaseService <|-- TransactionService
+    BaseService <|-- FileIOService
+    BaseService <|-- InvestmentService
+}
+
+package "IO & Import" {
+    interface CsvImporter<T>
+    interface CsvWriter<T>
+    class CsvTransactionImporter
+    class CsvExporter
+    class CsvSerializable {
+        + String toCsv()
+        + static fromCsv()
+    }
+
+    CsvImporter <|.. CsvTransactionImporter
+    CsvWriter <|.. CsvExporter
+    AbstractTransaction ..|> CsvSerializable
+}
+
+package "Factory & Strategy" {
+    interface TransactionCreator {
+        + create(...)
+    }
+
+    class TransactionFactory {
+        + static createTransaction()
+        + Map<TransactionType, TransactionCreator>
+    }
+
+    class IncomeTransactionCreator
+    class ExpenseTransactionCreator
+    class MovementTransactionCreator
+
+    TransactionCreator <|.. IncomeTransactionCreator
+    TransactionCreator <|.. ExpenseTransactionCreator
+    TransactionCreator <|.. MovementTransactionCreator
+}
+
+package "Composite & Iterator" {
+    interface CompositeTransaction {
+        + getTransactionId()
+    }
+
+    class TransactionIterator
+    CompositeTransaction <|.. AbstractTransaction
+}
+
+package "Utility & Annotations" {
+    class InputSanitizer {
+        + static validate(Object)
+    }
+
+    annotation Sanitize
+    AbstractTransaction .. Sanitize
+    User .. Sanitize
+    Account .. Sanitize
+}
+
+@enduml

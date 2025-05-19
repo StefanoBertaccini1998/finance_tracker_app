@@ -2,6 +2,7 @@ package it.finance.sb.io;
 
 import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.exception.DataValidationException;
+import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.model.account.AccounType;
@@ -14,8 +15,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CsvTransactionImporter implements CsvImporter<AbstractTransaction> {
@@ -27,7 +30,7 @@ public class CsvTransactionImporter implements CsvImporter<AbstractTransaction> 
                                                 Map<String, ?> referenceMap,
                                                 boolean autoCreateMissingAccounts,
                                                 boolean skipBadLines,
-                                                List<String> errorLog) throws IOException {
+                                                List<String> errorLog) throws IOException, DataValidationException {
 
         if (!Files.exists(inputFile) || !Files.isRegularFile(inputFile)) {
             throw new IOException("Input file not found or invalid.");
@@ -59,7 +62,9 @@ public class CsvTransactionImporter implements CsvImporter<AbstractTransaction> 
                 } catch (Exception e) {
                     String msg = "[Line " + lineNum + "] " + e.getMessage();
                     if (errorLog != null) errorLog.add(msg);
-                    if (!skipBadLines) throw new IOException(msg, e);
+                    if (!skipBadLines) {
+                        throw new DataValidationException(msg, e);
+                    }
                 }
             }
         }
@@ -70,7 +75,7 @@ public class CsvTransactionImporter implements CsvImporter<AbstractTransaction> 
     private AbstractTransaction parseLine(String line,
                                           int lineNum,
                                           Map<String, AccountInterface> accountMap,
-                                          boolean autoCreate) throws Exception {
+                                          boolean autoCreate) throws DataValidationException, AccountOperationException, TransactionOperationException {
 
         String[] fields = line.split(",", -1);
         if (fields.length < 8) throw new DataValidationException("Line " + lineNum + ": too few fields.");
@@ -121,7 +126,6 @@ public class CsvTransactionImporter implements CsvImporter<AbstractTransaction> 
         return account;
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, AccountInterface> castAccountMap(Map<String, ?> rawMap) {
         return rawMap.entrySet().stream()
                 .filter(e -> e.getValue() instanceof AccountInterface)

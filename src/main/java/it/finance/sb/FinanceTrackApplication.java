@@ -54,9 +54,9 @@ public class FinanceTrackApplication {
                     mementoService.loadUser(savedUsers.get(selected - 1)).ifPresentOrElse(user -> {
                         currentUser = user;
                         System.out.println(ConsoleStyle.success("✅ Loaded user: " + user.getName()));
-                    }, () -> createNewUser());
+                    }, FinanceTrackApplication::createNewUser);
                 } catch (Exception e) {
-                    System.out.println(ConsoleStyle.error("❌ Failed to load user: " + e.getMessage()));
+                    System.out.println(ConsoleStyle.error("❌ Failed to load user"));
                 }
             }
         } else {
@@ -80,7 +80,7 @@ public class FinanceTrackApplication {
             mementoService.saveUser(currentUser);
             System.out.println(ConsoleStyle.success("💾 User created successfully!"));
         } catch (Exception e) {
-            System.out.println(ConsoleStyle.error("❌ Failed to create user: " + e.getMessage()));
+            System.out.println(ConsoleStyle.error("❌ Failed to create user"));
         }
     }
 
@@ -112,7 +112,7 @@ public class FinanceTrackApplication {
                         mementoService.saveUser(currentUser);
                         System.out.println(ConsoleStyle.success("✅ User saved!"));
                     } catch (Exception e) {
-                        System.out.println(ConsoleStyle.error("❌ Failed to save user: " + e.getMessage()));
+                        System.out.println(ConsoleStyle.error("❌ Failed to save user"));
                     }
                 }
                 case 6 -> running = false;
