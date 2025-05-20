@@ -88,7 +88,7 @@ public class FileIOService extends BaseService {
             throw e;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "[FileIOService] Failed to import for an unknown reason: " + e.getMessage(), e);
-            throw e;
+            throw new IOException(e.getMessage());
         }
     }
 

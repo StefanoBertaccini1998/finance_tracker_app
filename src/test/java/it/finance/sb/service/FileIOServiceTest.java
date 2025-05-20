@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
@@ -97,7 +98,7 @@ public class FileIOServiceTest {
         when(mockImporter.importFrom(any(), any(), anyBoolean(), anyBoolean(), any()))
                 .thenThrow(new RuntimeException("Import failed"));
 
-        assertThrows(FileIOException.class, () -> fileIOService.importTransactions(inputPath, false, false));
+        assertThrows(IOException.class, () -> fileIOService.importTransactions(inputPath, false, false));
     }
 
     @Test
