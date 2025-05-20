@@ -40,15 +40,6 @@ public class IncomeTransaction extends AbstractTransaction {
         return toAccount;
     }
 
-    /**
-     * Sets to account.
-     *
-     * @param toAccount the to account
-     */
-    public void setToAccount(AccountInterface toAccount) {
-        this.toAccount = toAccount;
-    }
-
     @Override
     public void displayTransaction() {
         System.out.printf("Income Transaction of %f - to %s - in %s - reason %s %n", amount, toAccount.getName(), date, reason);

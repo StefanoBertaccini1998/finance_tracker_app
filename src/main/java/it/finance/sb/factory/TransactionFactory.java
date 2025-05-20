@@ -3,8 +3,8 @@ package it.finance.sb.factory;
 import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
-import it.finance.sb.model.transaction.*;
-import it.finance.sb.service.AccountService;
+import it.finance.sb.model.transaction.AbstractTransaction;
+import it.finance.sb.model.transaction.TransactionType;
 
 import java.util.Date;
 import java.util.EnumMap;

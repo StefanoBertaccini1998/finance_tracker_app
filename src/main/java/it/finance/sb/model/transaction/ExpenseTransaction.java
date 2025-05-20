@@ -40,15 +40,6 @@ public class ExpenseTransaction extends AbstractTransaction {
         return fromAccount;
     }
 
-    /**
-     * Sets from account.
-     *
-     * @param fromAccount the from account
-     */
-    public void setFromAccount(AccountInterface fromAccount) {
-        this.fromAccount = fromAccount;
-    }
-
     @Override
     public void displayTransaction() {
         System.out.printf("Expense Transaction of %f - from %s - in %s - reason %s %n", amount, fromAccount.getName(), date, reason);

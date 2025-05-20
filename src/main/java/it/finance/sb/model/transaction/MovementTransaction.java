@@ -44,30 +44,12 @@ public class MovementTransaction extends AbstractTransaction {
     }
 
     /**
-     * Sets to account.
-     *
-     * @param toAccount the to account
-     */
-    public void setToAccount(AccountInterface toAccount) {
-        this.toAccount = toAccount;
-    }
-
-    /**
      * Gets from account.
      *
      * @return the from account
      */
     public AccountInterface getFromAccount() {
         return fromAccount;
-    }
-
-    /**
-     * Sets from account.
-     *
-     * @param fromAccount the from account
-     */
-    public void setFromAccount(AccountInterface fromAccount) {
-        this.fromAccount = fromAccount;
     }
 
     @Override

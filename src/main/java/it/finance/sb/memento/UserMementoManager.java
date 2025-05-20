@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.mapper.UserSnapshot;
-import it.finance.sb.model.user.User;
-import it.finance.sb.utility.ConsoleStyle;
 
 import java.io.File;
 import java.io.IOException;

@@ -10,7 +10,6 @@ import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
-import it.finance.sb.service.FileIOService;
 import it.finance.sb.utility.InputSanitizer;
 
 import java.io.BufferedReader;
