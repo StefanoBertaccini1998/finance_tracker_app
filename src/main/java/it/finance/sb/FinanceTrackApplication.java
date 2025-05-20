@@ -237,7 +237,6 @@ public class FinanceTrackApplication {
     /**
      * Display all transactions for the current user (flattened list).
      */
-    //TODO move away
     private static void displayAllTransactions() {
         TransactionPrinter.printTransactions(transactionService.getAllTransactionsFlattened());
     }

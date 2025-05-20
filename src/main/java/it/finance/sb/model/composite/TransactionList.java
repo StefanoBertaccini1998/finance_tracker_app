@@ -77,15 +77,12 @@ public class TransactionList implements CompositeTransaction {
      * @return the transaction iterator
      */
     public List<AbstractTransaction> getFlattenedTransactions() {
-        List<AbstractTransaction> result = new ArrayList<>();
-        for (CompositeTransaction ct : transactionList) {
-            if (ct instanceof AbstractTransaction tx) {
-                result.add(tx);
-            } else if (ct instanceof TransactionList nested) {
-                result.addAll(nested.getFlattenedTransactions());
+            List<AbstractTransaction> result = new ArrayList<>();
+            TransactionIterator iterator = this.iterator();
+            while (iterator.hasNext()) {
+                result.add(iterator.next());
             }
-        }
-        return result;
+            return result;
     }
 
     /**

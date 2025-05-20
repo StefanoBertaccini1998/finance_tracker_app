@@ -41,7 +41,7 @@ public class FileIOService extends BaseService {
     /**
      * Imports a list of transactions from a CSV file and adds them to the user.
      *
-     * @return
+     * @return the imported transaction list
      */
     public List<AbstractTransaction> importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
             throws FileIOException, UserLoginException, DataValidationException {
