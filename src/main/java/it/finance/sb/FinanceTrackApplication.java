@@ -16,16 +16,15 @@ import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.ConsoleUtils;
 import it.finance.sb.utility.TransactionPrinter;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FinanceTrackApplication {
 
-    // Services
     private static final UserService userService = new UserService();
     private static final TransactionService transactionService = new TransactionService(userService);
     private static final AccountService accountService = new AccountService(transactionService);
@@ -36,10 +35,9 @@ public class FinanceTrackApplication {
     private static final MementoService mementoService = new MementoService();
 
     private static final Logger logger = LoggerFactory.getInstance().getLogger(FinanceTrackApplication.class);
-
     private static User currentUser;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UserCancelledException {
         System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
         loginUser();
         showMainMenu();
@@ -48,103 +46,116 @@ public class FinanceTrackApplication {
 
     private static void loginUser() {
         System.out.println(ConsoleStyle.section("🔐 Load or Create User"));
-
-        int choice = ConsoleUtils.showMenu("User Login", "Load existing user", "Create new user");
-        if (choice == 1) {
-            List<String> savedUsers = mementoService.listUsers();
-            if (savedUsers.isEmpty()) {
-                System.out.println(ConsoleStyle.warning(" No saved users found."));
-                createNewUser();
-            } else {
-                int selected = ConsoleUtils.showMenu("Select a saved user", savedUsers.toArray(new String[0]));
-                try {
+        try {
+            int loginChoice = ConsoleUtils.showMenu("User Login", false, "Load existing user", "Create new user");
+            if (loginChoice == 1) {
+                List<String> savedUsers = mementoService.listUsers();
+                if (savedUsers.isEmpty()) {
+                    System.out.println(ConsoleStyle.warning(" No saved users found."));
+                    createNewUser();
+                } else {
+                    int selected = ConsoleUtils.showMenu("Select a saved user", savedUsers.toArray(new String[0]));
+                    if (selected == -1) throw new UserCancelledException(); // user backed out
                     mementoService.loadUser(savedUsers.get(selected - 1)).ifPresentOrElse(user -> {
                         currentUser = user;
                         System.out.println(ConsoleStyle.success(" Loaded user: " + user.getName()));
                     }, FinanceTrackApplication::createNewUser);
-                } catch (Exception e) {
-                    System.out.println(ConsoleStyle.error(" Failed to load user"));
-                }
-            }
-        } else {
-            createNewUser();
-        }
 
-        // Set current user on all services
-        userService.setCurrentUser(currentUser);
-        accountService.setCurrentUser(currentUser);
-        transactionService.setCurrentUser(currentUser);
-        fileIOService.setCurrentUser(currentUser);
-        investmentService.setCurrentUser(currentUser);
+                }
+            } else {
+                createNewUser();
+            }
+            userService.setCurrentUser(currentUser);
+            accountService.setCurrentUser(currentUser);
+            transactionService.setCurrentUser(currentUser);
+            fileIOService.setCurrentUser(currentUser);
+            investmentService.setCurrentUser(currentUser);
+        } catch (MementoException e) {
+            logger.log(Level.SEVERE, " Failed to load user", e);
+            System.out.println(ConsoleStyle.error(" Failed to load user."));
+            loginUser();
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            loginUser();
+        }
     }
+
 
     private static void createNewUser() {
         try {
             String name = ConsoleUtils.prompt("Enter your name", false);
-            int age = Integer.parseInt(ConsoleUtils.prompt("Enter your age", false));
+            if (name == null) throw new UserCancelledException();
+
+            String ageStr = ConsoleUtils.prompt("Enter your age", false);
+            if (ageStr == null) throw new UserCancelledException();
+            int age = Integer.parseInt(ageStr);
+
             Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
+            if (gender == null) throw new UserCancelledException();
+
             currentUser = userService.create(name, age, gender);
             mementoService.saveUser(currentUser);
-            System.out.println(ConsoleStyle.success("💾 User created successfully!"));
+            System.out.println(ConsoleStyle.success(" User created and saved!"));
+
         } catch (DataValidationException e) {
             logger.warning("User data invalid: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Invalid input: please check name or age."));
+            System.out.println(ConsoleStyle.error(" Invalid user data: " + e.getMessage()));
+            createNewUser();
+        } catch (NumberFormatException e) {
+            logger.warning("User data invalid: " + e.getMessage());
+            System.out.println(ConsoleStyle.error(" Invalid age number format."));
+            createNewUser();
         } catch (MementoException e) {
-            System.out.println(ConsoleStyle.error(" Failed to create user"));
+            logger.severe("Failed to save user: " + e.getMessage());
+            System.out.println(ConsoleStyle.error(" Could not save user."));
+            createNewUser();
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            loginUser(); // go back to user menu
         }
     }
 
-    private static void showMainMenu() {
+    private static void showMainMenu() throws UserCancelledException {
         boolean running = true;
         while (running) {
-            int choice = ConsoleUtils.showMenu("Main Menu",
+            int choice = ConsoleUtils.showMenu("Main Menu", false,
                     "Manage Accounts",
                     "Manage Transactions",
                     "Import/Export CSV",
                     "Investment Calculator",
                     "Save Current User",
                     "Exit");
-
+            if (choice == -1) return; // user backed out
             switch (choice) {
                 case 1 -> showAccountMenu();
-                case 2 -> {
-                    if (currentUser.getAccountList().isEmpty()) {
-                        System.out.println(ConsoleStyle.warning(" No accounts available. Please create one."));
-                    } else {
-                        showTransactionMenu();
-                    }
-                }
+                case 2 -> showTransactionMenu();
                 case 3 -> showCsvMenu();
-                case 4 ->
-                        System.out.println(ConsoleStyle.warning(" Feature will be implemented."));//investmentService.showInvestmentMenu();
+                case 4 -> System.out.println(ConsoleStyle.warning(" Investment feature coming soon."));
                 case 5 -> {
                     try {
                         mementoService.saveUser(currentUser);
-                        System.out.println(ConsoleStyle.success(" User saved!"));
+                        System.out.println(ConsoleStyle.success(" User saved."));
                     } catch (Exception e) {
-                        System.out.println(ConsoleStyle.error(" Failed to save user"));
+                        System.out.println(ConsoleStyle.error(" Failed to save user."));
+                        logger.log(Level.SEVERE, "User save failed", e);
                     }
                 }
                 case 6 -> running = false;
-                default -> System.out.println(ConsoleStyle.error("Invalid option."));
             }
         }
     }
 
-    // ===================== ACCOUNT MENU =====================
-    private static void showAccountMenu() {
+    // ================= ACCOUNT ===================
+
+    private static void showAccountMenu() throws UserCancelledException {
         boolean running = true;
         while (running) {
-            int choice = ConsoleUtils.showMenu("Account Menu",
-                    "View Accounts",
-                    "Create Account",
-                    "Update Account",
-                    "Delete Account",
-                    "Back");
-
+            int choice = ConsoleUtils.showMenu("Account Menu", false,
+                    "View Accounts", "Create Account", "Update Account", "Delete Account", "Back");
+            if (choice == -1) return; // user backed out
             switch (choice) {
                 case 1 -> accountService.displayAllAccount();
-                case 2 -> createNewAccount();
+                case 2 -> createAccount();
                 case 3 -> updateAccount();
                 case 4 -> deleteAccount();
                 case 5 -> running = false;
@@ -152,78 +163,67 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
-     * CLI logic to create a new account
-     */
-    private static void createNewAccount() {
+    private static void createAccount() {
         try {
             String name = ConsoleUtils.prompt("Account name", false);
+
             Double balance = ConsoleUtils.promptForDouble("Initial balance", false);
+
             AccounType type = ConsoleUtils.selectEnum(AccounType.class, "Account Type", false);
 
             AccountInterface acc = accountService.create(type, name, balance);
-            System.out.println(ConsoleStyle.success(" Created account: " + acc));
+            System.out.println(ConsoleStyle.success(" Created: " + acc));
 
         } catch (DataValidationException e) {
-            logger.warning("Account data invalid: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Invalid input: please check name or balance."));
-        } catch (AccountOperationException e) {
-            logger.warning("Account operation failed: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Failed to create account. Please retry."));
-        } catch (UserLoginException e) {
-            logger.severe("Attempted to create account with no active user.");
-            System.out.println(ConsoleStyle.error(" No user session found."));
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error while creating account", e);
-            System.out.println(ConsoleStyle.error(" Unexpected error occurred. Contact support."));
+            logger.warning("Invalid account data: " + e.getMessage());
+            System.out.println(ConsoleStyle.error(" Check account details: " + e.getMessage()));
+        } catch (AccountOperationException | UserLoginException e) {
+            logger.warning("Account creation failed: " + e.getMessage());
+            System.out.println(ConsoleStyle.error(" " + e.getMessage()));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
         }
     }
 
-
     private static void updateAccount() {
         try {
-            AccountInterface acc = getAccount("account to update");
-            String newName = ConsoleUtils.prompt("New name (blank to skip)", true);
-            AccounType newType = ConsoleUtils.selectEnum(AccounType.class, "New Type", true);
-            Double newBalance = ConsoleUtils.promptForDouble("New balance (blank to skip)", true);
-            accountService.modify(acc, newType, newName, newBalance);
-            System.out.println(ConsoleStyle.success(" Account updated successfully."));
-        } catch (AccountOperationException e) {
-            logger.warning("Account operation failed: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Failed to update account. Please retry."));
-        } catch (DataValidationException e) {
-            logger.warning("Account data invalid: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Could not update account. Make sure values are valid."));
-        } catch (UserLoginException e) {
-            logger.severe("Attempted to update account with no active user.");
-            System.out.println(ConsoleStyle.error(" No user session found."));
+            AccountInterface acc = getAccount("to update");
+            String name = ConsoleUtils.prompt("New name (blank to skip)", true);
+            AccounType type = ConsoleUtils.selectEnum(AccounType.class, "New Type", true);
+            Double balance = ConsoleUtils.promptForDouble("New balance (blank to skip)", true);
+
+            accountService.modify(acc, type, name, balance);
+            System.out.println(ConsoleStyle.success(" Account updated."));
+
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+        } catch (AccountOperationException | UserLoginException | DataValidationException e) {
+            logger.warning("Account update error: " + e.getMessage());
+            System.out.println(ConsoleStyle.error(" Could not update account: " + e.getMessage()));
         }
     }
 
     private static void deleteAccount() {
         try {
-            AccountInterface acc = getAccount("account to delete");
+            AccountInterface acc = getAccount("to delete");
             accountService.delete(acc);
             System.out.println(ConsoleStyle.success(" Account deleted."));
-        } catch (AccountOperationException e) {
-            System.out.println(ConsoleStyle.error(" Could not delete account. Please try again."));
-        } catch (UserLoginException e) {
-            logger.severe("Attempted to delete account with no active user.");
-            System.out.println(ConsoleStyle.error(" No user session found."));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+        } catch (AccountOperationException | UserLoginException e) {
+            logger.warning("Delete failed: " + e.getMessage());
+            System.out.println(ConsoleStyle.error(" " + e.getMessage()));
         }
     }
 
-    // ===================== TRANSACTIONS =====================
-    private static void showTransactionMenu() {
+    // ================= TRANSACTION ===================
+
+    private static void showTransactionMenu() throws UserCancelledException {
         boolean running = true;
         while (running) {
-            int choice = ConsoleUtils.showMenu("Transaction Menu",
-                    "View Transactions",
-                    "Create Transaction",
-                    "Update Transaction",
-                    "Delete Transaction",
-                    "Back");
-
+            int choice = ConsoleUtils.showMenu("Transaction Menu", false,
+                    "View Transactions", "Create Transaction", "Update Transaction", "Delete Transaction", "Back");
+            if (choice == -1) return; // user backed out
             switch (choice) {
                 case 1 -> displayAllTransactions();
                 case 2 -> createTransaction();
@@ -234,52 +234,44 @@ public class FinanceTrackApplication {
         }
     }
 
-    /**
-     * Display all transactions for the current user (flattened list).
-     */
-    private static void displayAllTransactions() {
-        TransactionPrinter.printTransactions(transactionService.getAllTransactionsFlattened());
-    }
-
     private static void createTransaction() {
         try {
+            if (currentUser.getAccountList().isEmpty())
+                throw new TransactionOperationException("At least one account is required.");
+
             TransactionType type = ConsoleUtils.selectEnum(TransactionType.class, "Transaction Type", false);
+
             Double amount = ConsoleUtils.promptForDouble("Amount", false);
             String category = ConsoleUtils.selectOrCreateCategory(currentUser.getSortedCategories(), false);
             String reason = ConsoleUtils.prompt("Reason", false);
             AccountInterface[] acc = getTransactionAccounts(type);
+
             transactionService.create(type, amount, category, reason, new Date(), acc[0], acc[1]);
-            System.out.println(ConsoleStyle.success(" Transaction created."));
-        } catch (TransactionOperationException e) {
-            logger.warning("❌ Business rule error during transaction creation: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Could not create transaction. Check funds or account selection."));
-        } catch (DataValidationException e) {
-            logger.warning("❌ Data validation failed: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Invalid transaction data. Please review inputs."));
-        } catch (UserLoginException e) {
-            logger.severe("❌ User session missing: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Operation requires a logged-in user."));
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error during transaction creation", e);
-            System.out.println(ConsoleStyle.error(" An unexpected error occurred. Please try again."));
+            System.out.println(ConsoleStyle.success("✅ Transaction created."));
+
+        } catch (TransactionOperationException | DataValidationException | UserLoginException e) {
+            logger.warning("Transaction error: " + e.getMessage());
+            System.out.println(ConsoleStyle.error(" " + e.getMessage()));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Cancelled by user."));
         }
     }
 
     private static void updateTransaction() {
         try {
             AbstractTransaction tx = getTransaction("to update");
-            Double newAmount = ConsoleUtils.promptForDouble("New amount (blank to skip)", true);
-            String newCategory = ConsoleUtils.selectOrCreateCategory(currentUser.getSortedCategories(), true);
-            String newReason = ConsoleUtils.prompt("New reason (blank to skip)", true);
+            Double amount = ConsoleUtils.promptForDouble("New amount (blank to skip)", true);
+            String category = ConsoleUtils.selectOrCreateCategory(currentUser.getSortedCategories(), true);
+            String reason = ConsoleUtils.prompt("New reason (blank to skip)", true);
             AccountInterface[] acc = getTransactionAccounts(tx.getType());
-            transactionService.modify(tx, newAmount, newCategory, newReason, new Date(), acc[0], acc[1]);
+
+            transactionService.modify(tx, amount, category, reason, new Date(), acc[0], acc[1]);
             System.out.println(ConsoleStyle.success(" Transaction updated."));
-        } catch (TransactionOperationException e) {
-            logger.warning("❌ Business rule error during transaction update: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Could not update transaction."));
-        } catch (UserLoginException e) {
-            logger.severe("❌ User session missing: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Operation requires a logged-in user."));
+
+        } catch (TransactionOperationException | UserLoginException e) {
+            System.out.println(ConsoleStyle.error(" Could not update: " + e.getMessage()));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
         }
     }
 
@@ -288,30 +280,32 @@ public class FinanceTrackApplication {
             AbstractTransaction tx = getTransaction("to delete");
             transactionService.delete(tx);
             System.out.println(ConsoleStyle.success(" Transaction deleted."));
-        } catch (TransactionOperationException e) {
-            logger.warning("❌ Business rule error during transaction deletion: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Could not delete transaction."));
-        } catch (UserLoginException e) {
-            logger.severe("❌ User session missing: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Operation requires a logged-in user."));
+        } catch (TransactionOperationException | UserLoginException e) {
+            System.out.println(ConsoleStyle.error(" Could not delete: " + e.getMessage()));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
         }
     }
 
-    // ===================== FILE IO =====================
-    private static void showCsvMenu() {
-        Scanner scanner = new Scanner(System.in);
+    private static void displayAllTransactions() {
+        List<AbstractTransaction> list = transactionService.getAllTransactionsFlattened();
+        if (list.isEmpty()) {
+            System.out.println(ConsoleStyle.warning(" No transactions available."));
+        } else {
+            TransactionPrinter.printTransactions(list);
+        }
+    }
+
+    // ================= FILE ===================
+    private static void showCsvMenu() throws UserCancelledException {
         boolean running = true;
-
         while (running) {
-            System.out.println(ConsoleStyle.menuTitle("CSV Menu"));
-            System.out.println("1️⃣  Import Transactions");
-            System.out.println("2️⃣  Export Transactions");
-            System.out.println("3️⃣  Back");
-
-            switch (scanner.nextLine().trim()) {
-                case "1" -> importTransactions();
-                case "2" -> exportTransactions();
-                case "3" -> running = false;
+            int choice = ConsoleUtils.showMenu("CSV Menu", false, "Import Transactions", "Export Transactions", "Back");
+            if (choice == -1) return; // user backed out
+            switch (choice) {
+                case 1 -> importTransactions();
+                case 2 -> exportTransactions();
+                case 3 -> running = false;
             }
         }
     }
@@ -321,21 +315,22 @@ public class FinanceTrackApplication {
             Path path = Path.of(ConsoleUtils.prompt("Enter CSV path", false));
             boolean autoCreate = ConsoleUtils.prompt("Auto-create missing accounts? (y/n)", false).equalsIgnoreCase("y");
             boolean skipErrors = ConsoleUtils.prompt("Skip errors? (y/n)", false).equalsIgnoreCase("y");
-            List<AbstractTransaction> abstractTransactions = fileIOService.importTransactions(path, autoCreate, skipErrors);
+
+            List<AbstractTransaction> imported = fileIOService.importTransactions(path, autoCreate, skipErrors);
             System.out.println(ConsoleStyle.success(" Transactions imported."));
-            TransactionPrinter.printTransactions(abstractTransactions);
-        } catch (FileIOException e) {
-            logger.warning("Failed to import file: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Import failed. Check file path and format."));
+            TransactionPrinter.printTransactions(imported);
+
         } catch (DataValidationException e) {
-            logger.warning("Validation failed during import: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Import failed: file contains invalid data."));
+            logger.log(Level.SEVERE, "Import failed", e);
+            System.out.println(ConsoleStyle.error(" Failed to import transactions. Data validation error occurred"));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Import failed", e);
+            System.out.println(ConsoleStyle.error(" Failed to import transactions. File does not exist"));
         } catch (UserLoginException e) {
-            logger.severe("Import called without user login.");
-            System.out.println(ConsoleStyle.error(" Operation requires a logged-in user."));
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error during import", e);
-            System.out.println(ConsoleStyle.error(" Unexpected import error. Please retry."));
+            logger.log(Level.SEVERE, "Import failed", e);
+            System.out.println(ConsoleStyle.error(" User must be logged in."));
         }
     }
 
@@ -343,41 +338,70 @@ public class FinanceTrackApplication {
         try {
             Path path = Path.of(ConsoleUtils.prompt("Enter output CSV path", false));
             fileIOService.exportTransactions(path);
-            System.out.println(ConsoleStyle.success(" Export completed to: " + path));
-        } catch (FileIOException e) {
-            logger.warning("Failed to export to file: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Could not export transactions. Verify output path."));
+            System.out.println(ConsoleStyle.success(" Exported to: " + path));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(" Operation cancelled."));
         } catch (UserLoginException e) {
-            logger.severe("Export called without user login.");
-            System.out.println(ConsoleStyle.error(" Operation requires a logged-in user."));
+            logger.log(Level.SEVERE, "Export failed", e);
+            System.out.println(ConsoleStyle.error(" User must be logged in."));
+        } catch (FileIOException e) {
+            logger.log(Level.SEVERE, "Export failed", e);
+            System.out.println(ConsoleStyle.error(" Failed to export transactions."));
         }
     }
 
-    // ===================== HELPERS =====================
-    private static AccountInterface getAccount(String label) {
-        accountService.displayAllAccount();
-        String input = ConsoleUtils.prompt("Enter " + label + " index", false);
-        int index = Integer.parseInt(input.trim()) - 1;
-        return currentUser.getAccountList().get(index);
+    // =============== HELPERS ===============
+
+    private static AccountInterface getAccount(String label) throws UserCancelledException {
+        return selectFromList(currentUser.getAccountList(), label);
     }
 
-    private static AbstractTransaction getTransaction(String label) {
-        List<AbstractTransaction> txs = transactionService.getAllTransactionsFlattened();
-        for (int i = 0; i < txs.size(); i++) {
-            System.out.println((i + 1) + ". " + txs.get(i));
-        }
-        String input = ConsoleUtils.prompt("Enter transaction " + label + " index", false);
-        return txs.get(Integer.parseInt(input.trim()) - 1);
+
+    private static AbstractTransaction getTransaction(String label) throws UserCancelledException {
+        return selectFromList(transactionService.getAllTransactionsFlattened(), "transaction " + label);
     }
 
-    private static AccountInterface[] getTransactionAccounts(TransactionType type) {
+    private static AccountInterface[] getTransactionAccounts(TransactionType type) throws UserCancelledException {
         AccountInterface from = null, to = null;
-        if (type == TransactionType.INCOME) to = getAccount("destination");
-        if (type == TransactionType.EXPENSE) from = getAccount("source");
-        if (type == TransactionType.MOVEMENT) {
-            from = getAccount("source");
-            to = getAccount("destination");
+        switch (type) {
+            case INCOME -> to = getAccount("destination");
+            case EXPENSE -> from = getAccount("source");
+            case MOVEMENT -> {
+                from = getAccount("source");
+                to = getAccount("destination");
+            }
         }
         return new AccountInterface[]{to, from};
     }
+
+    private static <T> T selectFromList(List<T> list, String promptLabel) throws UserCancelledException {
+        if (list == null || list.isEmpty()) {
+            System.out.println(ConsoleStyle.warning(" No items available."));
+            throw new UserCancelledException();
+        }
+
+        for (int i = 0; i < list.size(); i++) {
+            System.out.printf("%d. %s%n", i + 1, list.get(i).toString());
+        }
+
+        while (true) {
+            String input = ConsoleUtils.prompt("Enter " + promptLabel + " index (or 'back')", false);
+
+            if (input == null || input.equalsIgnoreCase("back")) {
+                throw new UserCancelledException();
+            }
+
+            try {
+                int index = Integer.parseInt(input.trim()) - 1;
+                if (index >= 0 && index < list.size()) {
+                    return list.get(index);
+                } else {
+                    System.out.println(ConsoleStyle.error(" Index out of range. Try again."));
+                }
+            } catch (NumberFormatException e) {
+                System.out.println(ConsoleStyle.error(" Invalid number format. Enter a valid index."));
+            }
+        }
+    }
+
 }

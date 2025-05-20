@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class CsvImporter implements CsvImporterI<AbstractTransaction> {
 
     private static final Logger logger = LoggerFactory.getInstance().getLogger(CsvImporter.class);
+    private final List<AccountInterface> newlyCreatedAccounts = new ArrayList<>();
     private static final String EXPECTED_HEADER = "TransactionId,Type,Amount,From,To,Category,Reason,Date";
 
     @Override
@@ -43,12 +44,11 @@ public class CsvImporter implements CsvImporterI<AbstractTransaction> {
         }
 
         Map<String, AccountInterface> accountMap = castAccountMap(referenceMap);
-
+        newlyCreatedAccounts.clear();
         List<AbstractTransaction> transactions = new ArrayList<>();
         int lineNum = 0;
 
         try (BufferedReader reader = Files.newBufferedReader(inputFile)) {
-
             // Validate header
             String header = reader.readLine();
             lineNum++;
@@ -128,8 +128,9 @@ public class CsvImporter implements CsvImporterI<AbstractTransaction> {
 
         AccountInterface account = accountMap.get(name);
         if (account == null && autoCreate) {
-            account = AccountFactory.createAccount(AccounType.BANK, name, 0);
+            account = AccountFactory.createAccount(AccounType.BANK, name, 0.01);
             accountMap.put(name, account);
+            newlyCreatedAccounts.add(account);
         }
         return account;
     }
@@ -138,5 +139,9 @@ public class CsvImporter implements CsvImporterI<AbstractTransaction> {
         return rawMap.entrySet().stream()
                 .filter(e -> e.getValue() instanceof AccountInterface)
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> (AccountInterface) e.getValue()));
+    }
+
+    public List<AccountInterface> getNewlyCreatedAccounts() {
+        return newlyCreatedAccounts;
     }
 }

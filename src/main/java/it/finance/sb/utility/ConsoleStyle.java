@@ -13,27 +13,32 @@ public class ConsoleStyle {
 
     // ℹ️ Info messages
     public static String info(String msg) {
-        return CYAN + "ℹ️  " + msg + RESET;
+        return CYAN + "\nℹ️  " + msg + RESET;
     }
 
     // ✅ Success
     public static String success(String msg) {
-        return GREEN + "✅ " + msg + RESET;
+        return GREEN + "\n✅ " + msg + RESET;
     }
 
     // ⚠️ Warning
     public static String warning(String msg) {
-        return YELLOW + "⚠️  " + msg + RESET;
+        return YELLOW + "\n⚠️  " + msg + RESET;
+    }
+
+    // ⚠️ Back
+    public static String back(String msg) {
+        return YELLOW + "\n↩️  " + msg + RESET;
     }
 
     // ❌ Error
     public static String error(String msg) {
-        return RED + "❌ " + msg + RESET;
+        return RED + "\n❌ " + msg + RESET;
     }
 
     // 🧠 Prompts & Headers
     public static String header(String msg) {
-        return BOLD + BLUE + "🧠 " + msg + RESET;
+        return BOLD + BLUE + "\n🧠 " + msg + RESET;
     }
 
     public static String section(String msg) {

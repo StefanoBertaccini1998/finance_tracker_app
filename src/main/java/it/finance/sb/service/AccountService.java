@@ -7,6 +7,7 @@ import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
+import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.InputSanitizer;
 
 import java.util.List;
@@ -133,12 +134,16 @@ public class AccountService extends BaseService {
      * Display all account balances without the account used for movement
      */
     public void displayAllAccount(AccountInterface accountInterfaceAvoid) {
-        logger.info("[UserService] Showing all balances for user '" + getCurrentUser().getName() + "'");
-        List<AccountInterface> accountList = getCurrentUser().getAccountList();
-        for (int i = 0; i < accountList.size(); i++) {
-            if (accountInterfaceAvoid == null || accountInterfaceAvoid != accountList.get(i)) {
-                AccountInterface accountInterface = accountList.get(i);
-                System.out.println(i + 1 + ") " + accountInterface);
+        if (currentUser.getAccountList().isEmpty()) {
+            System.out.println(ConsoleStyle.warning(" No accounts found."));
+        } else {
+            logger.info("[UserService] Showing all balances for user '" + getCurrentUser().getName() + "'");
+            List<AccountInterface> accountList = getCurrentUser().getAccountList();
+            for (int i = 0; i < accountList.size(); i++) {
+                if (accountInterfaceAvoid == null || accountInterfaceAvoid != accountList.get(i)) {
+                    AccountInterface accountInterface = accountList.get(i);
+                    System.out.println(i + 1 + ") " + accountInterface);
+                }
             }
         }
     }

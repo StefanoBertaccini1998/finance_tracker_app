@@ -2,92 +2,78 @@
 
 ## 🧾 Overview
 
-Finance Tracker is a CLI-based Java application for personal financial management. It allows users to manage multiple accounts, track income/expense/movement transactions, categorize spending, and import/export data using CSV.
+**Finance Tracker** is a modular, CLI-based Java application for personal financial management. Users can:
 
-This MVP focuses on **core financial tracking logic** with testable, secure, extensible code — and is intended as the backend core of a future full-stack dashboard application.
+- Create and manage **accounts**
+- Track **Income**, **Expense**, and **Movement** transactions
+- Categorize spending
+- Import/export transactions via CSV
+- Persist and restore users via Memento pattern
 
----
-
-## 🛠️ Technologies & Concepts Used
-
-- **Java Collections & Generics**
-- **Java I/O (File, CSV)**
-- **Logger (Custom Factory)**
-- **JUnit 5 + Mockito** (Test suite for service/IO layers)
-- **Custom Annotation (`@Sanitize`)**
-- **Exception Shielding + Controlled Input Validation**
-- **Modular Service Architecture**
-- **CLI-based Interface (extensible to GUI/API)**
+🔧 Built for extensibility and testability, this MVP serves as the backend foundation for a future full-stack finance dashboard.
 
 ---
 
-## 🧩 Design Patterns
+## 🛠️ Technologies & Features
 
-| Pattern               | Where It’s Used                  |
-|----------------------|----------------------------------|
-| **Factory**          | `TransactionFactory`             |
-| **Abstract Factory** | For `TransactionCreator` logic   |
-| **Composite**        | `TransactionList` (holds transactions) |
-| **Iterator**         | `TransactionIterator`            |
-| **Strategy**         | `TransactionCreator` strategy map |
-| **Memento**          | `MementoService` → snapshot/restore users |
-| **Builder**          | `IncomeTransactionBuilder` for cleaner construction |
-| **Exception Shielding** | All services wrap and log exceptions securely |
-
----
-
-## 📐 Architecture Diagram (Simplified)
-
-![FinanceTrack UML](./finance_track_diagram.png)
+| Technology        | Use Case |
+|------------------|----------|
+| **Java Collections & Generics** | Manage users, accounts, and transactions with type safety |
+| **Java I/O**      | CSV import/export and file-based persistence |
+| **Custom Annotation `@Sanitize`** | Enforces declarative validation for domain fields |
+| **Logger (Singleton)** | App-wide logging to a single timestamped `.log` file |
+| **JUnit 5 + Mockito** | Unit testing + mock-based isolation for file and service layers |
+| **Reflection**    | Dynamic validation engine via `InputSanitizer` |
+| **Inversion of Control (IoC)** | Services injected with dependencies for modularity |
+| **Stream API + Lambdas** | Filtering and mapping for categories, transactions |
+| **Exception Shielding** | Controlled error propagation with user-friendly CLI feedback |
 
 ---
 
-## 🧪 Testing
+## 🧩 Design Patterns (with Justification)
 
-- All **service layers** tested with JUnit and Mockito
-- `CsvTransactionImporterTest` validates parsing and edge cases
-- `FileIOServiceTest` mocks I/O and checks transaction recording
-- `InputSanitizerTest` (suggested): verify annotation-driven rules
-
----
-
-## ⚠️ Known Limitations
-
-- CLI only — no REST or GUI yet
-- No multithreading (could help in file parsing later)
-- Some utility classes not fully tested (e.g., `ConsoleUtils`)
-- No encryption or authentication on saved users
+| Pattern              | Class(es)                              | Purpose |
+|----------------------|-----------------------------------------|---------|
+| **Factory**          | `TransactionFactory`                    | Encapsulates creation of transaction types |
+| **Abstract Factory** | `TransactionCreator` interface strategy | Flexible creation logic by transaction type |
+| **Composite**        | `TransactionList`, `CompositeTransaction` | Nested transaction hierarchies |
+| **Iterator**         | `TransactionIterator`                   | Navigates composite transaction lists |
+| **Builder**          | `IncomeTransactionBuilder`              | Clean construction of transaction objects |
+| **Strategy**         | Creator strategy map inside factory     | Dynamic behavior switching |
+| **Memento**          | `MementoService`, `UserSnapshot`        | Save/restore user sessions via JSON |
+| **Singleton**        | `LoggerFactory`                         | Centralized, configurable logging instance |
+| **Exception Shielding** | All services                          | User-facing error control & internal logging |
 
 ---
 
-## 🚀 Future Work
+## 🧪 Testing Suite
 
-This app is built as a **modular MVP** to become the **backend engine of a web-based finance dashboard**.
-
-Planned improvements:
-- Replace CLI with **Spring Boot Web Layer**
-- Replace Memento persistence with **SQL/NoSQL database**
-- Add user authentication + JWT
-- Integrate with **React/Vue Dashboard**
-- Add export to **PDF/Excel** formats
-- Use a full **dependency injection container**
+| Module | Coverage |
+|--------|----------|
+| `TransactionService`, `AccountService` | Full unit testing |
+| `CsvImporter`, `CsvWriter`, `FileIOService` | Tested using mocks and real IO |
+| `InputSanitizer` | Validates annotation logic |
+| `MementoService` | Load/save snapshot tests |
+| `Mockito` | Used to isolate IO dependencies |
 
 ---
 
-## 📂 Sample CSV File
+## 🧠 Technology Justifications
 
-A sample `transactions_sample_50.csv` is provided to test bulk import/export, including valid and invalid lines for robustness.
+- ✅ **Reflection** allows you to write `InputSanitizer` once and use it across all models with annotations — avoiding repetitive boilerplate.
+- ✅ **Custom Annotations** (`@Sanitize`) enable domain-driven, declarative validation.
+- ✅ **Stream API + Lambdas** simplify category filtering and transaction flattening.
+- ✅ **Inversion of Control** ensures testability and clean constructor-based dependency injection.
+- ✅ **Exception Shielding** prevents internal errors from reaching users while enabling detailed log diagnostics.
+- ✅ **Mockito** lets you simulate file or user operations without side effects — essential for IO layer testing.
+- ✅ **Singleton LoggerFactory** keeps logs clean, consolidated, and non-intrusive to the CLI experience.
 
 ---
 
-## 👨‍💻 Author
+## 📂 Setup & Execution
 
-Stefano Bertaccini  
-GitHub: [StefanoBertaccini1998](https://github.com/StefanoBertaccini1998)
-
----
-
-## 🗂️ License
-
-MIT License (or add your university-specific license info here)
-
+```bash
+git clone https://github.com/StefanoBertaccini1998/finance_tracker_app.git
+cd finance_tracker_app
+javac -d out $(find . -name "*.java")
+java -cp out it.finance.sb.FinanceTrackApplication

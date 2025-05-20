@@ -2,7 +2,6 @@ package it.finance.sb.factory;
 
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
-import it.finance.sb.model.transaction.ExpenseTransaction;
 import it.finance.sb.model.transaction.TransactionBuilder;
 import it.finance.sb.model.transaction.TransactionType;
 
@@ -23,7 +22,5 @@ public class ExpenseTransactionCreator implements TransactionCreator {
                 .from(from);
 
         return builder.build();
-
-
     }
 }

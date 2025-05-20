@@ -3,6 +3,7 @@ package it.finance.sb.service;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.UserLoginException;
+import it.finance.sb.io.CsvImporter;
 import it.finance.sb.io.CsvImporterI;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.logging.LoggerFactory;
@@ -10,6 +11,7 @@ import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.utility.InputSanitizer;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +46,7 @@ public class FileIOService extends BaseService {
      * @return the imported transaction list
      */
     public List<AbstractTransaction> importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
-            throws FileIOException, UserLoginException, DataValidationException {
+            throws UserLoginException, DataValidationException, IOException {
 
         requireLoggedInUser();
 
@@ -56,6 +58,16 @@ public class FileIOService extends BaseService {
                     filePath, accountMap, autoCreateAccounts, skipErrors, errorLog
             );
 
+            // add newly created accounts to current user
+            if (autoCreateAccounts) {
+                CsvImporter importerImpl = (CsvImporter) transactionImporter;
+                for (AccountInterface account : importerImpl.getNewlyCreatedAccounts()) {
+                    InputSanitizer.validate(account); // still validate
+                    getCurrentUser().addAccount(account);
+                    logger.info("[FileIOService] Auto-added account from import: " + account.getName());
+                }
+            }
+
             for (AbstractTransaction tx : imported) {
                 try {
                     InputSanitizer.validate(tx);
@@ -66,18 +78,17 @@ public class FileIOService extends BaseService {
                     logger.warning("[FileIOService] Skipped malformed transaction: " + e.getMessage());
                 }
             }
-
             if (!errorLog.isEmpty()) {
                 logger.warning("[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
             }
-
             logger.info("[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
             return imported;
-        } catch (DataValidationException e) {
+        } catch (DataValidationException | IOException e) {
+            logger.log(Level.SEVERE, "[FileIOService] Failed to import: " + e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[FileIOService] Failed to import: " + e.getMessage(), e);
-            throw new FileIOException("Failed to import transactions.", e);
+            logger.log(Level.SEVERE, "[FileIOService] Failed to import for an unknown reason: " + e.getMessage(), e);
+            throw e;
         }
     }
 
