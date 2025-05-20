@@ -1,5 +1,6 @@
 package it.finance.sb.model.transaction;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.finance.sb.model.account.AccountInterface;
 
 import java.util.Date;
@@ -7,6 +8,7 @@ import java.util.Date;
 /**
  * The type Movement transaction.
  */
+@JsonTypeName("MovementTransaction")
 public class MovementTransaction extends AbstractTransaction {
 
     private AccountInterface toAccount;
@@ -26,6 +28,10 @@ public class MovementTransaction extends AbstractTransaction {
         super(amount, category, reason, date, TransactionType.MOVEMENT);
         this.toAccount = toAccount;
         this.fromAccount = fromAccount;
+    }
+
+    public MovementTransaction(){
+        super();
     }
 
     /**

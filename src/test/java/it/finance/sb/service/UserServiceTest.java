@@ -32,7 +32,7 @@ class UserServiceTest {
         accountService = new AccountService(transactionService);
         accountService.setCurrentUser(user);
         AccountInterface acc = accountService.create(AccounType.BANK, "Main", 1000.0);
-        transactionService.create(TransactionType.INCOME, 200, "Bonus","Category", new Date(), acc, null);
+        transactionService.create(TransactionType.INCOME, 200, "Category","Bonus", new Date(), acc, null);
     }
 
     @Test

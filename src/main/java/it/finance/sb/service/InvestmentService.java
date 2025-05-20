@@ -198,7 +198,7 @@ public class InvestmentService extends BaseService {
                 totalInterestEarned += yearlyInterest;
             }
 
-            if (year == 0 || year == years || year % 5 == 0) {
+            if (year == years || year % 5 == 0) {
                 report.append(String.format("%d\t$%.2f\t$%.2f\n",
                         year, yearEndBalance, yearlyInterest));
             }

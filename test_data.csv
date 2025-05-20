@@ -1,0 +1,50 @@
+TransactionId,Type,Amount,From,To,Category,Reason,Date
+0,INCOME,3000,,MainBank,Salary,Monthly paycheck,1716201600000
+0,EXPENSE,1500,MainBank,,Rent,Monthly rent,1716288000000
+0,EXPENSE,200,MainBank,,Utilities,Electricity bill,1716374400000
+0,MOVEMENT,500,MainBank,Investments,Savings,Saving transfer,1716460800000
+0,EXPENSE,80,MainBank,,Food,Groceries,1716547200000
+0,EXPENSE,45,MainBank,,Transport,Bus pass,1716633600000
+0,EXPENSE,300,MainBank,,Health,Dentist visit,1716720000000
+0,EXPENSE,120,MainBank,,Entertainment,Cinema + snacks,1716806400000
+0,EXPENSE,95,MainBank,,Shopping,Clothes,1716892800000
+0,MOVEMENT,1000,MainBank,EmergencyFund,Safety net transfer,1716979200000
+0,INCOME,250,,CryptoWallet,Freelance,Fiverr client,1717065600000
+0,EXPENSE,60,CryptoWallet,,Food,Late night pizza,1717152000000
+0,EXPENSE,150,MainBank,,Gifts,Birthday present,1717238400000
+0,MOVEMENT,700,MainBank,HolidayFund,Vacation plan,1717324800000
+0,EXPENSE,50,HolidayFund,,Food,Beach snacks,1717411200000
+0,INCOME,500,,MainBank,Bonus,Quarterly bonus,1717497600000
+0,EXPENSE,200,MainBank,,Tech,Gadget purchase,1717584000000
+0,MOVEMENT,400,MainBank,StockPortfolio,Investment,1717670400000
+0,EXPENSE,70,MainBank,,Fitness,Gym subscription,1717756800000
+0,EXPENSE,120,MainBank,,Books,Textbooks,1717843200000
+0,MOVEMENT,1500,EmergencyFund,MainBank,Reverse safety use,1717929600000
+0,EXPENSE,50,MainBank,,Food,Snacks and groceries,1718016000000
+0,EXPENSE,40,MainBank,,Transport,Uber ride,1718102400000
+0,EXPENSE,80,MainBank,,Health,Pharmacy,1718188800000
+0,EXPENSE,100,MainBank,,Entertainment,Concert ticket,1718275200000
+0,MOVEMENT,600,MainBank,Savings,Long term savings,1718361600000
+0,INCOME,3200,,MainBank,Salary,June paycheck,1718448000000
+0,EXPENSE,1500,MainBank,,Rent,Apartment June,1718534400000
+0,EXPENSE,180,MainBank,,Utilities,Water and gas,1718620800000
+0,MOVEMENT,300,MainBank,Investments,SIP payment,1718707200000
+0,EXPENSE,90,MainBank,,Food,Dining out,1718793600000
+0,EXPENSE,60,MainBank,,Transport,Monthly metro card,1718880000000
+0,EXPENSE,130,MainBank,,Health,Eye checkup,1718966400000
+0,EXPENSE,110,MainBank,,Entertainment,Game purchase,1719052800000
+0,EXPENSE,200,MainBank,,Shopping,Shoes,1719139200000
+0,MOVEMENT,700,MainBank,EmergencyFund,Top-up safety fund,1719225600000
+0,INCOME,450,,CryptoWallet,Freelance,Project payment,1719312000000
+0,EXPENSE,75,CryptoWallet,,Food,Late order,1719398400000
+0,EXPENSE,180,MainBank,,Gifts,Anniversary,1719484800000
+0,MOVEMENT,800,MainBank,HolidayFund,Vacation saving,1719571200000
+0,EXPENSE,90,HolidayFund,,Food,Snacks & drinks,1719657600000
+0,INCOME,600,,MainBank,Bonus,Referral bonus,1719744000000
+0,EXPENSE,220,MainBank,,Tech,Smartwatch,1719830400000
+0,MOVEMENT,1000,MainBank,StockPortfolio,Investment top-up,1719916800000
+0,EXPENSE,100,MainBank,,Fitness,Yoga class,1720003200000
+0,EXPENSE,140,MainBank,,Books,Reference books,1720089600000
+0,MOVEMENT,1600,EmergencyFund,MainBank,Used during emergency,1720176000000
+0,EXPENSE,65,MainBank,,Food,Groceries,1720262400000
+0,EXPENSE,55,MainBank,,Transport,Taxi,1720348800000

@@ -1,7 +1,7 @@
 package it.finance.sb.exception;
 
 /**
- * Custom exception for data validation error
+ * Custom exception for operation in UserService error
  */
 public class UserLoginException extends Exception {
     public UserLoginException(String message) {

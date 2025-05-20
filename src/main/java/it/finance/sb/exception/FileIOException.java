@@ -1,7 +1,7 @@
 package it.finance.sb.exception;
 
 /**
- * Custom exception for data validation error
+ * Custom exception for operation in FileIO error
  */
 public class FileIOException extends Exception {
     public FileIOException(String message) {

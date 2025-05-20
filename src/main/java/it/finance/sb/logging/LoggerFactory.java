@@ -1,24 +1,65 @@
 package it.finance.sb.logging;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 /**
- * The type Logger factory.
+ * Singleton Logger Factory for centralized, file-only logging across the app.
  */
 public class LoggerFactory {
 
-    private final Map<Class<?>, Logger> loggers = new HashMap<>();
+    private static final String LOG_DIR = "log";
+    private static final String LOG_FILE_NAME = "finance_app_%s.log";
+    private static final Level GLOBAL_LOG_LEVEL = Level.INFO;
 
     private static LoggerFactory instance;
+    private final Logger sharedLogger;
 
-    private LoggerFactory() {}
+    private LoggerFactory() {
+        try {
+            Files.createDirectories(Paths.get(LOG_DIR));
+        } catch (IOException e) {
+            System.err.println("⚠️ Failed to create log directory: " + e.getMessage());
+        }
 
+        sharedLogger = Logger.getLogger("GlobalAppLogger");
+        sharedLogger.setUseParentHandlers(false);
+        sharedLogger.setLevel(GLOBAL_LOG_LEVEL);
+
+        if (sharedLogger.getHandlers().length == 0) {
+            try {
+                String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+                String fileName = String.format(LOG_FILE_NAME, date);
+                FileHandler fileHandler = new FileHandler(LOG_DIR + "/" + fileName, true);
+
+                fileHandler.setLevel(GLOBAL_LOG_LEVEL);
+                fileHandler.setFormatter(new Formatter() {
+                    @Override
+                    public String format(LogRecord record) {
+                        return String.format("[%1$tF %1$tT] [%2$-7s] [%3$s] %4$s %n",
+                                new Date(record.getMillis()),
+                                record.getLevel().getName(),
+                                record.getLoggerName(),
+                                record.getMessage());
+                    }
+                });
+
+                sharedLogger.addHandler(fileHandler);
+                // 🔕 No console handler
+
+            } catch (IOException e) {
+                System.err.println("⚠️ Logger initialization failed: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Get the singleton instance of LoggerFactory.
+     */
     public static synchronized LoggerFactory getInstance() {
         if (instance == null) {
             instance = new LoggerFactory();
@@ -26,35 +67,15 @@ public class LoggerFactory {
         return instance;
     }
 
-    private static final String LOG_FILE_PATH = "log\\finance_app_%s.log";
-
     /**
-     * Gets logger.
-     *
-     * @param clazz the clazz
-     * @return the logger
+     * Get the centralized shared logger with the caller’s class name tagged.
      */
     public Logger getLogger(Class<?> clazz) {
-        Logger logger = loggers.computeIfAbsent(clazz, classObject -> Logger.getLogger(classObject.getName()));
-        logger.setLevel(Level.WARNING);
-        logger.setUseParentHandlers(false);
-
-        if (logger.getHandlers().length == 0) {
-            try {
-                FileHandler fileHandler = new FileHandler(String.format(LOG_FILE_PATH,clazz.getName().substring(clazz.getName().lastIndexOf(".")+1)), false);
-                fileHandler.setFormatter(new SimpleFormatter());
-                logger.addHandler(fileHandler);
-            } catch (IOException e) {
-                System.err.println("⚠️ Failed to initialize logger file: " + e.getMessage());
-            }
-
-            ConsoleHandler consoleHandler = new ConsoleHandler();
-            consoleHandler.setFormatter(new SimpleFormatter());
-            logger.addHandler(consoleHandler);
-            logger.setLevel(Level.ALL);
-        }
-
-        return logger;
+        // This just tags the logger name with the class for log readability
+        sharedLogger.setFilter(record -> {
+            record.setLoggerName(clazz.getSimpleName());
+            return true;
+        });
+        return sharedLogger;
     }
 }
-

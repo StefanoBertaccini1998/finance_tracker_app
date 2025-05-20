@@ -2,6 +2,7 @@ package it.finance.sb.service;
 
 import it.finance.sb.exception.FileIOException;
 import it.finance.sb.io.CsvImporter;
+import it.finance.sb.io.CsvImporterI;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
@@ -24,7 +25,7 @@ public class FileIOServiceTest {
 
     private TransactionService transactionService;
     private UserService userService;
-    private CsvImporter<AbstractTransaction> mockImporter;
+    private CsvImporterI<AbstractTransaction> mockImporter;
     private CsvWriter<AbstractTransaction> mockWriter;
     private FileIOService fileIOService;
 

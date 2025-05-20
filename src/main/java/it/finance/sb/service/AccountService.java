@@ -123,7 +123,6 @@ public class AccountService extends BaseService {
         } catch (DataValidationException | AccountOperationException e) {
             logger.warning("[AccountService] Modification failed: " + e.getMessage());
             throw e;
-
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected error modifying account", e);
             throw new AccountOperationException("Unexpected error during account modification.", e);

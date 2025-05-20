@@ -3,9 +3,19 @@ package it.finance.sb.utility;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * The type Console utils.
+ */
 public class ConsoleUtils {
     private static final Scanner scanner = new Scanner(System.in);
 
+    /**
+     * Show menu int.
+     *
+     * @param title   the title
+     * @param options the options
+     * @return the int
+     */
     public static int showMenu(String title, String... options) {
         System.out.println(ConsoleStyle.menuTitle(title));
         for (int i = 0; i < options.length; i++) {
@@ -20,6 +30,13 @@ public class ConsoleUtils {
         }
     }
 
+    /**
+     * Prompt string.
+     *
+     * @param label      the label
+     * @param allowEmpty the allow empty
+     * @return the string
+     */
     public static String prompt(String label, boolean allowEmpty) {
         System.out.print(ConsoleStyle.inputPrompt(label + ": "));
         String input = scanner.nextLine().trim();
@@ -30,6 +47,13 @@ public class ConsoleUtils {
         return input;
     }
 
+    /**
+     * Prompt for double double.
+     *
+     * @param label      the label
+     * @param allowEmpty the allow empty
+     * @return the double
+     */
     public static Double promptForDouble(String label, boolean allowEmpty) {
         String input = prompt(label, allowEmpty);
         if (input.isBlank() && allowEmpty) return null;
@@ -43,6 +67,15 @@ public class ConsoleUtils {
         }
     }
 
+    /**
+     * Select enum e.
+     *
+     * @param <E>        the type parameter
+     * @param enumClass  the enum class
+     * @param title      the title
+     * @param allowEmpty the allow empty
+     * @return the e
+     */
     public static <E extends Enum<E>> E selectEnum(Class<E> enumClass, String title, boolean allowEmpty) {
         E[] values = enumClass.getEnumConstants();
         System.out.println(ConsoleStyle.menuTitle("Select " + title));
@@ -61,6 +94,13 @@ public class ConsoleUtils {
         }
     }
 
+    /**
+     * Select or create category string.
+     *
+     * @param existing   the existing
+     * @param allowEmpty the allow empty
+     * @return the string
+     */
     public static String selectOrCreateCategory(List<String> existing, boolean allowEmpty) {
         if (existing.isEmpty()) {
             System.out.println(ConsoleStyle.warning("No categories found. Please type a new one."));

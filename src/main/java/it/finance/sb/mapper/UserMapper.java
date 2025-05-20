@@ -9,8 +9,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The type User mapper.
+ */
 public class UserMapper {
 
+    /**
+     * To snapshot user snapshot.
+     *
+     * @param user the user
+     * @return the user snapshot
+     */
     public static UserSnapshot toSnapshot(User user) {
         Map<TransactionType, List<AbstractTransaction>> flattened = new HashMap<>();
         for (Map.Entry<TransactionType, TransactionList> entry : user.getTransactionLists().entrySet()) {
@@ -26,11 +35,17 @@ public class UserMapper {
         );
     }
 
+    /**
+     * From snapshot user.
+     *
+     * @param snapshot the snapshot
+     * @return the user
+     */
     public static User fromSnapshot(UserSnapshot snapshot) {
         User user = new User(snapshot.name(), snapshot.age(), snapshot.gender());
 
         snapshot.categories().forEach(user::addCategory);
-        snapshot.accounts().forEach(user.getAccountList()::add);
+        snapshot.accounts().forEach(user::addAccount);
 
         // Rebuild TransactionList composites
         snapshot.transactions().forEach((type, flatList) -> {

@@ -1,5 +1,6 @@
 package it.finance.sb.model.transaction;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.finance.sb.model.account.AccountInterface;
 
 import java.util.Date;
@@ -7,6 +8,7 @@ import java.util.Date;
 /**
  * The type Income transaction.
  */
+@JsonTypeName("IncomeTransaction")
 public class IncomeTransaction extends AbstractTransaction {
 
     private AccountInterface toAccount;
@@ -23,6 +25,10 @@ public class IncomeTransaction extends AbstractTransaction {
     public IncomeTransaction(double amount, String category, String reason, Date date, AccountInterface toAccount) {
         super(amount, category, reason, date, TransactionType.INCOME);
         this.toAccount = toAccount;
+    }
+
+    public IncomeTransaction(){
+        super();
     }
 
     /**

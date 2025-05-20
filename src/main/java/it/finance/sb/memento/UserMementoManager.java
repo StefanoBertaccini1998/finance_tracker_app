@@ -1,5 +1,6 @@
 package it.finance.sb.memento;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import it.finance.sb.logging.LoggerFactory;
@@ -16,6 +17,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Logger;
 
+/**
+ * The type User memento manager.
+ */
 public class UserMementoManager {
     private static final String SAVE_DIR = "saved_users";
     private static final ObjectMapper mapper;
@@ -23,12 +27,20 @@ public class UserMementoManager {
 
     static {
         mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         File dir = new File(SAVE_DIR);
         if (!dir.exists()) {
             boolean created = dir.mkdirs();
             if (created) logger.info("[UserMementoManager] Created directory: " + SAVE_DIR);
         }
     }
+
+    /**
+     * Save.
+     *
+     * @param snapshot the snapshot
+     * @throws IOException the io exception
+     */
     public static void save(UserSnapshot snapshot) throws IOException {
         Objects.requireNonNull(snapshot, "UserSnapshot cannot be null.");
         String filename = sanitizeFileName(snapshot.name()) + ".json";
@@ -37,6 +49,13 @@ public class UserMementoManager {
         logger.info("[UserMementoManager] Saved snapshot: " + filePath);
     }
 
+    /**
+     * Load optional.
+     *
+     * @param username the username
+     * @return the optional
+     * @throws IOException the io exception
+     */
     public static Optional<UserSnapshot> load(String username) throws IOException {
         String filename = sanitizeFileName(username) + ".json";
         Path filePath = Path.of(SAVE_DIR, filename);
@@ -49,6 +68,11 @@ public class UserMementoManager {
         return Optional.of(mapper.readValue(file, UserSnapshot.class));
     }
 
+    /**
+     * List saved users list.
+     *
+     * @return the list
+     */
     public static List<String> listSavedUsers() {
         File dir = new File(SAVE_DIR);
         String[] files = dir.list((d, name) -> name.endsWith(".json"));
@@ -60,6 +84,12 @@ public class UserMementoManager {
                 .toList();
     }
 
+    /**
+     * Delete boolean.
+     *
+     * @param username the username
+     * @return the boolean
+     */
     public static boolean delete(String username) {
         String filename = sanitizeFileName(username) + ".json";
         File file = new File(SAVE_DIR, filename);

@@ -53,7 +53,7 @@ public class MementoService {
             Optional<UserSnapshot> snapshotOpt = UserMementoManager.load(username);
             return snapshotOpt.map(UserMapper::fromSnapshot);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[MementoService] Error loading user '" + username + "'", e);
+            logger.severe("[MementoService] Error loading user '" + username + "':\n" + e.getMessage());
             throw new MementoException("Failed to load user data.", e);
         }
     }

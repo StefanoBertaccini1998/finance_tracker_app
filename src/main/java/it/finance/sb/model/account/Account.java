@@ -1,15 +1,18 @@
 package it.finance.sb.model.account;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.finance.sb.annotation.Sanitize;
 
 import java.util.Objects;
 
+@JsonTypeName("Account")
 public class Account implements AccountInterface {
     private static int idCounter = 0;
 
     @JsonProperty
-    private final int accountId;
+    private int accountId;
 
     @Sanitize(notBlank = true, maxLength = 30)
     private String name;
@@ -19,11 +22,18 @@ public class Account implements AccountInterface {
 
     private AccounType type;
 
-    public Account(String name, double deposit, AccounType type) {
+    @JsonCreator
+    public Account(@JsonProperty("name") String name,
+                   @JsonProperty("balance") double balance,
+                   @JsonProperty("type") AccounType type) {
         this.accountId = ++idCounter;
         this.name = name;
-        this.balance = deposit;
+        this.balance = balance;
         this.type = type;
+    }
+
+    public Account() {
+        this.accountId = ++idCounter;
     }
 
     @Override

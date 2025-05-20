@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CsvTransactionImporterTest {
-    CsvTransactionImporter csvTransactionImporter;
+    CsvImporter csvTransactionImporter;
     @BeforeEach
     void setUp(){
-        csvTransactionImporter = new CsvTransactionImporter();
+        csvTransactionImporter = new CsvImporter();
     }
 
     @Test

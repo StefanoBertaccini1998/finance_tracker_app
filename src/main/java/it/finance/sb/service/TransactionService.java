@@ -1,5 +1,6 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.factory.TransactionFactory;
@@ -15,78 +16,81 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The type Transaction service.
+ * Service layer responsible for managing creation, modification,
+ * deletion, and validation of user transactions.
  */
 public class TransactionService extends BaseService {
 
     private final Logger logger = LoggerFactory.getInstance().getLogger(TransactionService.class);
     private final UserService userService;
 
-    /**
-     * Instantiates a new Transaction service.
-     */
     public TransactionService(UserService userService) {
         this.userService = userService;
     }
 
     /**
-     * Create abstract transaction.
+     * Creates and registers a new transaction.
      *
-     * @param type        the type
-     * @param amount      the amount
-     * @param category    the category
-     * @param reason      the reason
-     * @param date        the date
-     * @param toAccount   the to account
-     * @param fromAccount the from account
-     * @return the abstract transaction
-     * @throws TransactionOperationException the transaction operation exception
+     * @param type        Transaction type
+     * @param amount      Amount
+     * @param category    Category
+     * @param reason      Reason
+     * @param date        Date
+     * @param toAccount   Target account (may be null)
+     * @param fromAccount Source account (may be null)
+     * @return Created AbstractTransaction
+     * @throws TransactionOperationException Business validation errors
+     * @throws DataValidationException       Annotation-level validation
+     * @throws UserLoginException            If user is not logged in
      */
     public AbstractTransaction create(TransactionType type, double amount, String category, String reason, Date date,
                                       AccountInterface toAccount, AccountInterface fromAccount)
-            throws TransactionOperationException, UserLoginException {
+            throws TransactionOperationException, UserLoginException, DataValidationException {
+
         requireLoggedInUser();
 
+        // Basic validation
         if (amount <= 0) {
-            logger.warning("[TransactionService] Non-positive amount passed.");
-            throw new TransactionOperationException("Transaction amount must be greater than 0.");
+            logger.warning("Rejected transaction with non-positive amount: " + amount);
+            throw new TransactionOperationException("Amount must be greater than 0.");
         }
 
         if (fromAccount != null && fromAccount.getBalance() < amount) {
-            logger.warning("[TransactionService] Insufficient funds in source account.");
-            throw new TransactionOperationException("Insufficient funds in source account.");
+            logger.warning("Insufficient funds in source account: " + fromAccount.getName());
+            throw new TransactionOperationException("Insufficient funds.");
         }
-        validateAccounts(type, toAccount, fromAccount);
 
+        validateAccounts(type, toAccount, fromAccount);
         applyAccountUpdates(type, amount, toAccount, fromAccount);
 
         try {
-
             AbstractTransaction transaction = TransactionFactory.createTransaction(
-                    type, amount, reason, category, date, toAccount, fromAccount);
+                    type, amount, category, reason, date, toAccount, fromAccount
+            );
 
             InputSanitizer.validate(transaction);
             getCurrentUser().addTransaction(transaction);
             userService.addCategory(category);
 
-            logger.info("[TransactionService] Created transaction: ID=" + transaction.getTransactionId());
+            logger.info("Created transaction ID=" + transaction.getTransactionId() + " for user: " + getCurrentUser().getName());
             return transaction;
 
-        } catch (TransactionOperationException e) {
-            logger.log(Level.WARNING, "Transaction creation failed: " + e.getMessage());
+        } catch (DataValidationException e) {
+            logger.log(Level.WARNING, "Sanitization failed: " + e.getMessage(), e);
             throw e;
+
+        } catch (TransactionOperationException e) {
+            logger.log(Level.WARNING, "Business rule violation: " + e.getMessage());
+            throw e;
+
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error while creating transaction", e);
-            throw new TransactionOperationException("Failed to create transaction.", e);
+            logger.log(Level.SEVERE, "Unexpected error creating transaction", e);
+            throw new TransactionOperationException("Unexpected failure while creating transaction.", e);
         }
     }
 
     /**
-     * Delete abstract transaction.
-     *
-     * @param transaction the transaction
-     * @return the abstract transaction
-     * @throws TransactionOperationException the transaction operation exception
+     * Deletes an existing transaction and reverts account balances.
      */
     public AbstractTransaction delete(AbstractTransaction transaction)
             throws TransactionOperationException, UserLoginException {
@@ -94,38 +98,28 @@ public class TransactionService extends BaseService {
         requireLoggedInUser();
 
         if (transaction == null) {
-            throw new TransactionOperationException("Cannot delete a null transaction.");
+            logger.warning("Attempted to delete null transaction.");
+            throw new TransactionOperationException("Transaction cannot be null.");
         }
 
         try {
             reverseAccountUpdate(transaction);
+            getCurrentUser()
+                    .getTransactionLists()
+                    .getOrDefault(transaction.getType(), new TransactionList())
+                    .remove(transaction);
 
-            TransactionList list = getCurrentUser().getTransactionLists().get(transaction.getType());
-            if (list != null) {
-                list.remove(transaction);
-            }
-
-            logger.info("[TransactionService] Deleted transaction ID=" + transaction.getTransactionId());
+            logger.info("Deleted transaction ID=" + transaction.getTransactionId());
             return transaction;
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[TransactionService] Error deleting transaction", e);
+            logger.log(Level.SEVERE, "Error deleting transaction", e);
             throw new TransactionOperationException("Failed to delete transaction.", e);
         }
     }
 
     /**
-     * Modify abstract transaction.
-     *
-     * @param original    the original
-     * @param newAmount   the new amount
-     * @param newCategory the new category
-     * @param newReason   the new reason
-     * @param newDate     the new date
-     * @param newTo       the new to
-     * @param newFrom     the new from
-     * @return the abstract transaction
-     * @throws TransactionOperationException the transaction operation exception
+     * Modifies an existing transaction by deleting and recreating it.
      */
     public AbstractTransaction modify(AbstractTransaction original,
                                       Double newAmount,
@@ -133,18 +127,16 @@ public class TransactionService extends BaseService {
                                       String newReason,
                                       Date newDate,
                                       AccountInterface newTo,
-                                      AccountInterface newFrom) throws TransactionOperationException {
-        if (original == null) {
-            throw new TransactionOperationException("Original transaction is null.");
-        }
+                                      AccountInterface newFrom)
+            throws TransactionOperationException, UserLoginException {
+
+        if (original == null) throw new TransactionOperationException("Original transaction is null.");
 
         double finalAmount = Optional.ofNullable(newAmount).orElse(original.getAmount());
-        if (finalAmount <= 0) {
-            throw new TransactionOperationException("Modified amount must be greater than 0.");
-        }
+        if (finalAmount <= 0) throw new TransactionOperationException("Amount must be positive.");
 
         String finalCategory = Optional.ofNullable(newCategory).orElse(original.getCategory());
-        String finalReason = Optional.ofNullable(newReason).filter(s -> !s.isBlank()).orElse(original.getReason());
+        String finalReason = Optional.ofNullable(newReason).orElse(original.getReason());
         Date finalDate = Optional.ofNullable(newDate).orElse(original.getDate());
 
         TransactionType type = original.getType();
@@ -154,48 +146,41 @@ public class TransactionService extends BaseService {
         validateAccounts(type, finalTo, finalFrom);
 
         try {
-            //Delete transaction
             delete(original);
-            //Create + insert transaction
-            AbstractTransaction updated = create(
-                    type, finalAmount, finalCategory, finalReason, finalDate, newTo, newFrom);
-            logger.info("[TransactionService] Modified transaction ID=" + original.getTransactionId());
+            AbstractTransaction updated = create(type, finalAmount, finalCategory, finalReason, finalDate, finalTo, finalFrom);
+
+            logger.info("Transaction modified: OldID=" + original.getTransactionId() +
+                    ", NewID=" + updated.getTransactionId());
+
             return updated;
 
-        } catch (TransactionOperationException e) {
-            logger.warning("[TransactionService] Modification validation failed: " + e.getMessage());
+        } catch (TransactionOperationException | UserLoginException e) {
+            logger.log(Level.WARNING, "Failed to modify transaction: " + e.getMessage());
             throw e;
+
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[TransactionService] Failed to modify transaction", e);
+            logger.log(Level.SEVERE, "Unexpected error modifying transaction", e);
             throw new TransactionOperationException("Failed to modify transaction.", e);
         }
     }
 
     /**
-     * Remove transactions for account.
-     *
-     * @param accountToDelete the account to delete
+     * Removes all transactions involving a specific account (used on account deletion).
      */
     public void removeTransactionsForAccount(AccountInterface accountToDelete) {
         getCurrentUser().getTransactionLists().forEach((type, list) -> {
             TransactionIterator iterator = list.iterator();
-
             while (iterator.hasNext()) {
                 AbstractTransaction tx = iterator.next();
                 if (isTransactionLinkedToAccount(tx, accountToDelete)) {
                     iterator.remove();
-                    logger.info("[TransactionService] Removed transaction ID=" + tx.getTransactionId()
-                            + " due to account deletion.");
+                    logger.info("Removed transaction ID=" + tx.getTransactionId() +
+                            " due to deletion of account: " + accountToDelete.getName());
                 }
             }
         });
     }
 
-    /**
-     * Gets all transactions.
-     *
-     * @return the all transactions
-     */
     public List<AbstractTransaction> getAllTransactionsFlattened() {
         List<AbstractTransaction> all = new ArrayList<>();
         for (TransactionList txList : getCurrentUser().getTransactionLists().values()) {
@@ -210,20 +195,19 @@ public class TransactionService extends BaseService {
                 .toList();
     }
 
+    // ======================= Internal Helpers =======================
+
     private void validateAccounts(TransactionType type, AccountInterface to, AccountInterface from)
             throws TransactionOperationException {
-
         switch (type) {
             case INCOME -> {
-                if (to == null) throw new TransactionOperationException("ToAccount required for INCOME.");
+                if (to == null) throw new TransactionOperationException("To account is required for INCOME.");
             }
             case EXPENSE -> {
-                if (from == null || from.getBalance() <= 0)
-                    throw new TransactionOperationException("FromAccount required or insufficient funds.");
+                if (from == null) throw new TransactionOperationException("From account is required for EXPENSE.");
             }
             case MOVEMENT -> {
-                if (from == null || to == null || from.getBalance() <= 0)
-                    throw new TransactionOperationException("Valid source/target required for MOVEMENT.");
+                if (to == null || from == null) throw new TransactionOperationException("Both accounts required for MOVEMENT.");
             }
         }
     }
@@ -264,18 +248,18 @@ public class TransactionService extends BaseService {
     }
 
     private AccountInterface resolveTargetAccount(AbstractTransaction tx, TransactionType type, AccountInterface newTo) {
-        if (type == TransactionType.INCOME)
-            return Optional.ofNullable(newTo).orElse(((IncomeTransaction) tx).getToAccount());
-        if (type == TransactionType.MOVEMENT)
-            return Optional.ofNullable(newTo).orElse(((MovementTransaction) tx).getToAccount());
-        return null;
+        return switch (type) {
+            case INCOME -> Optional.ofNullable(newTo).orElse(((IncomeTransaction) tx).getToAccount());
+            case MOVEMENT -> Optional.ofNullable(newTo).orElse(((MovementTransaction) tx).getToAccount());
+            default -> null;
+        };
     }
 
     private AccountInterface resolveSourceAccount(AbstractTransaction tx, TransactionType type, AccountInterface newFrom) {
-        if (type == TransactionType.EXPENSE)
-            return Optional.ofNullable(newFrom).orElse(((ExpenseTransaction) tx).getFromAccount());
-        if (type == TransactionType.MOVEMENT)
-            return Optional.ofNullable(newFrom).orElse(((MovementTransaction) tx).getFromAccount());
-        return null;
+        return switch (type) {
+            case EXPENSE -> Optional.ofNullable(newFrom).orElse(((ExpenseTransaction) tx).getFromAccount());
+            case MOVEMENT -> Optional.ofNullable(newFrom).orElse(((MovementTransaction) tx).getFromAccount());
+            default -> null;
+        };
     }
 }

@@ -1,6 +1,7 @@
 package it.finance.sb.model.transaction;
 
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.finance.sb.model.account.AccountInterface;
 
 import java.util.Date;
@@ -8,6 +9,7 @@ import java.util.Date;
 /**
  * The type Expense transaction.
  */
+@JsonTypeName("ExpenseTransaction")
 public class ExpenseTransaction extends AbstractTransaction {
 
     private AccountInterface fromAccount;
@@ -26,6 +28,9 @@ public class ExpenseTransaction extends AbstractTransaction {
         this.fromAccount = fromAccount;
     }
 
+    public ExpenseTransaction(){
+        super();
+    }
     /**
      * Gets from account.
      *

@@ -2,6 +2,8 @@ package it.finance.sb.model.transaction;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.composite.CompositeTransaction;
 import it.finance.sb.io.CsvSerializable;
@@ -12,12 +14,21 @@ import java.util.Date;
 /**
  * The type Abstract transaction.
  */
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        property = "objectType"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = IncomeTransaction.class, name = "IncomeTransaction"),
+        @JsonSubTypes.Type(value = ExpenseTransaction.class, name = "ExpenseTransaction"),
+        @JsonSubTypes.Type(value = MovementTransaction.class, name = "MovementTransaction")
+})
 public abstract class AbstractTransaction implements CompositeTransaction, CsvSerializable {
     /**
      * The Transaction id.
      */
     @JsonProperty
-    protected final int transactionId;  // UNIQUE + final
+    protected int transactionId;
     private static int idCounter = 0;
     /**
      * The Amount.
@@ -60,6 +71,10 @@ public abstract class AbstractTransaction implements CompositeTransaction, CsvSe
         this.date = date;
         this.type = type;
         this.category = category;
+        this.transactionId = ++idCounter;
+    }
+
+    public AbstractTransaction() {
         this.transactionId = ++idCounter;
     }
 

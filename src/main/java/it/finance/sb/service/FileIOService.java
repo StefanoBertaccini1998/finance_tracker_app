@@ -1,8 +1,9 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.UserLoginException;
-import it.finance.sb.io.CsvImporter;
+import it.finance.sb.io.CsvImporterI;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
@@ -24,12 +25,12 @@ public class FileIOService extends BaseService {
 
     private final TransactionService transactionService;
     private final UserService userService;
-    private final CsvImporter<AbstractTransaction> transactionImporter;
+    private final CsvImporterI<AbstractTransaction> transactionImporter;
     private final CsvWriter<AbstractTransaction> transactionWriter;
 
     public FileIOService(TransactionService transactionService,
                          UserService userService,
-                         CsvImporter<AbstractTransaction> transactionImporter,
+                         CsvImporterI<AbstractTransaction> transactionImporter,
                          CsvWriter<AbstractTransaction> transactionWriter) {
         this.transactionService = transactionService;
         this.userService = userService;
@@ -39,9 +40,11 @@ public class FileIOService extends BaseService {
 
     /**
      * Imports a list of transactions from a CSV file and adds them to the user.
+     *
+     * @return
      */
-    public void importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
-            throws FileIOException, UserLoginException {
+    public List<AbstractTransaction> importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
+            throws FileIOException, UserLoginException, DataValidationException {
 
         requireLoggedInUser();
 
@@ -69,7 +72,9 @@ public class FileIOService extends BaseService {
             }
 
             logger.info("[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
-
+            return imported;
+        } catch (DataValidationException e) {
+            throw e;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "[FileIOService] Failed to import: " + e.getMessage(), e);
             throw new FileIOException("Failed to import transactions.", e);
