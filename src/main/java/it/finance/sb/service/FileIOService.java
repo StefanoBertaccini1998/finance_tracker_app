@@ -4,8 +4,8 @@ import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.io.CsvImporter;
-import it.finance.sb.io.CsvImporterI;
-import it.finance.sb.io.CsvWriter;
+import it.finance.sb.io.ImporterI;
+import it.finance.sb.io.WriterI;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
@@ -13,27 +13,29 @@ import it.finance.sb.utility.InputSanitizer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * FileIOService handles import and export of user transactions.
+ * Applies SRP, OCP (via pluggable ImporterI/WriterI), and exception shielding.
+ */
 public class FileIOService extends BaseService {
 
     private static final Logger logger = LoggerFactory.getInstance().getLogger(FileIOService.class);
 
     private final TransactionService transactionService;
     private final UserService userService;
-    private final CsvImporterI<AbstractTransaction> transactionImporter;
-    private final CsvWriter<AbstractTransaction> transactionWriter;
+    private final ImporterI<AbstractTransaction> transactionImporter;
+    private final WriterI<AbstractTransaction> transactionWriter;
 
     public FileIOService(TransactionService transactionService,
                          UserService userService,
-                         CsvImporterI<AbstractTransaction> transactionImporter,
-                         CsvWriter<AbstractTransaction> transactionWriter) {
+                         ImporterI<AbstractTransaction> transactionImporter,
+                         WriterI<AbstractTransaction> transactionWriter) {
         this.transactionService = transactionService;
         this.userService = userService;
         this.transactionImporter = transactionImporter;
@@ -41,9 +43,13 @@ public class FileIOService extends BaseService {
     }
 
     /**
-     * Imports a list of transactions from a CSV file and adds them to the user.
+     * Imports validated transactions from a CSV and updates user context.
+     * Supports error recovery and dynamic account creation.
      *
-     * @return the imported transaction list
+     * @param filePath path to CSV file
+     * @param autoCreateAccounts allow creation of missing accounts
+     * @param skipErrors continue on bad lines
+     * @return list of successfully imported transactions
      */
     public List<AbstractTransaction> importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
             throws UserLoginException, DataValidationException, IOException {
@@ -58,26 +64,14 @@ public class FileIOService extends BaseService {
                     filePath, accountMap, autoCreateAccounts, skipErrors, errorLog
             );
 
-            // add newly created accounts to current user
-            if (autoCreateAccounts) {
-                CsvImporter importerImpl = (CsvImporter) transactionImporter;
-                for (AccountInterface account : importerImpl.getNewlyCreatedAccounts()) {
-                    InputSanitizer.validate(account); // still validate
-                    getCurrentUser().addAccount(account);
-                    logger.info("[FileIOService] Auto-added account from import: " + account.getName());
-                }
+            if (autoCreateAccounts && transactionImporter instanceof CsvImporter importerImpl) {
+                handleAutoCreatedAccounts(importerImpl.getNewlyCreatedAccounts());
             }
 
             for (AbstractTransaction tx : imported) {
-                try {
-                    InputSanitizer.validate(tx);
-                    updateUserCategoryIfNeeded(tx);
-                    getCurrentUser().addTransaction(tx);
-                } catch (Exception e) {
-                    errorLog.add("❌ Skipped invalid transaction: " + e.getMessage());
-                    logger.warning("[FileIOService] Skipped malformed transaction: " + e.getMessage());
-                }
+                safelyAddTransaction(tx, errorLog);
             }
+
             if (!errorLog.isEmpty()) {
                 logger.warning("[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
             }
@@ -87,22 +81,20 @@ public class FileIOService extends BaseService {
             logger.log(Level.SEVERE, "[FileIOService] Failed to import: " + e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[FileIOService] Failed to import for an unknown reason: " + e.getMessage(), e);
-            throw new IOException(e.getMessage());
+            logger.log(Level.SEVERE, "[FileIOService] Unexpected import failure: " + e.getMessage(), e);
+            throw new IOException("Unexpected error during import", e);
         }
     }
 
     /**
-     * Exports all transactions of current user to CSV.
+     * Exports all current user's transactions to a given path.
      */
     public void exportTransactions(Path outputPath) throws FileIOException, UserLoginException {
         requireLoggedInUser();
 
         try {
             List<AbstractTransaction> allTxs = transactionService.getAllTransactionsFlattened();
-
             transactionWriter.exportToFile(allTxs, outputPath);
-
             logger.info("[FileIOService] Exported " + allTxs.size() + " transactions to: " + outputPath);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "[FileIOService] Export failed: " + e.getMessage(), e);
@@ -111,7 +103,7 @@ public class FileIOService extends BaseService {
     }
 
     /**
-     * Build account lookup map from user's account list
+     * Maps user's accounts by name for importer resolution.
      */
     private Map<String, AccountInterface> buildAccountLookup() {
         return getCurrentUser().getAccountList().stream()
@@ -119,13 +111,42 @@ public class FileIOService extends BaseService {
     }
 
     /**
-     * Auto-add category if not present for the user
+     * Adds a category to the user if missing.
      */
     private void updateUserCategoryIfNeeded(AbstractTransaction tx) throws UserLoginException {
         String category = tx.getCategory();
         if (category != null && !category.isBlank() && !getCurrentUser().isCategoryAllowed(category)) {
             userService.addCategory(category);
             logger.info("[FileIOService] Added new category during import: " + category);
+        }
+    }
+
+    /**
+     * Validates and adds auto-created accounts.
+     */
+    private void handleAutoCreatedAccounts(List<AccountInterface> accounts) {
+        for (AccountInterface account : accounts) {
+            try {
+                InputSanitizer.validate(account);
+                getCurrentUser().addAccount(account);
+                logger.info("[FileIOService] Auto-added account from import: " + account.getName());
+            } catch (Exception e) {
+                logger.warning("[FileIOService] Failed to add auto-created account: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Validates and adds a transaction, logging failures.
+     */
+    private void safelyAddTransaction(AbstractTransaction tx, List<String> errorLog) {
+        try {
+            InputSanitizer.validate(tx);
+            updateUserCategoryIfNeeded(tx);
+            getCurrentUser().addTransaction(tx);
+        } catch (Exception e) {
+            errorLog.add("❌ Skipped invalid transaction: " + e.getMessage());
+            logger.warning("[FileIOService] Skipped malformed transaction: " + e.getMessage());
         }
     }
 }

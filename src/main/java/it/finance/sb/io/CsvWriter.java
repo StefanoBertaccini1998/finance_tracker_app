@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  *
  * @param <T> the type parameter
  */
-public class CsvWriter<T extends CsvSerializable> implements CsvWriterI<T> {
+public class CsvWriter<T extends CsvSerializable> implements WriterI<T> {
 
     private static final Logger logger = LoggerFactory.getInstance().getLogger(CsvWriter.class);
     private final String header;

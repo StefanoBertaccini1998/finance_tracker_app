@@ -1,6 +1,7 @@
 package it.finance.sb.model.transaction;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.account.AccountInterface;
 
 import java.util.Date;
@@ -10,8 +11,9 @@ import java.util.Date;
  */
 @JsonTypeName("MovementTransaction")
 public class MovementTransaction extends AbstractTransaction {
-
+    @Sanitize(nonNull = true)
     private AccountInterface toAccount;
+    @Sanitize(nonNull = true)
     private AccountInterface fromAccount;
 
     /**
@@ -30,7 +32,7 @@ public class MovementTransaction extends AbstractTransaction {
         this.fromAccount = fromAccount;
     }
 
-    public MovementTransaction(){
+    public MovementTransaction() {
         super();
     }
 

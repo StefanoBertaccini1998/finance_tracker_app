@@ -21,12 +21,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * The type Csv importer.
  */
-public class CsvImporter implements CsvImporterI<AbstractTransaction> {
+public class CsvImporter implements ImporterI<AbstractTransaction> {
 
     private static final Logger logger = LoggerFactory.getInstance().getLogger(CsvImporter.class);
     private final List<AccountInterface> newlyCreatedAccounts = new ArrayList<>();
@@ -34,7 +33,7 @@ public class CsvImporter implements CsvImporterI<AbstractTransaction> {
 
     @Override
     public List<AbstractTransaction> importFrom(Path inputFile,
-                                                Map<String, ?> referenceMap,
+                                                Map<String, AccountInterface> accountMap,
                                                 boolean autoCreateMissingAccounts,
                                                 boolean skipBadLines,
                                                 List<String> errorLog) throws IOException, DataValidationException {
@@ -43,7 +42,6 @@ public class CsvImporter implements CsvImporterI<AbstractTransaction> {
             throw new IOException("Input file not found or invalid.");
         }
 
-        Map<String, AccountInterface> accountMap = castAccountMap(referenceMap);
         newlyCreatedAccounts.clear();
         List<AbstractTransaction> transactions = new ArrayList<>();
         int lineNum = 0;
@@ -123,22 +121,16 @@ public class CsvImporter implements CsvImporterI<AbstractTransaction> {
 
     private AccountInterface resolveAccount(Map<String, AccountInterface> accountMap,
                                             String name,
-                                            boolean autoCreate) throws AccountOperationException {
+                                            boolean autoCreate) throws AccountOperationException, DataValidationException {
         if (name.isBlank()) return null;
 
         AccountInterface account = accountMap.get(name);
         if (account == null && autoCreate) {
-            account = AccountFactory.createAccount(AccounType.BANK, name, 0.01);
+            account = AccountFactory.createAccount(AccounType.BANK, name, 0.00);
             accountMap.put(name, account);
             newlyCreatedAccounts.add(account);
         }
         return account;
-    }
-
-    private Map<String, AccountInterface> castAccountMap(Map<String, ?> rawMap) {
-        return rawMap.entrySet().stream()
-                .filter(e -> e.getValue() instanceof AccountInterface)
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> (AccountInterface) e.getValue()));
     }
 
     public List<AccountInterface> getNewlyCreatedAccounts() {

@@ -2,8 +2,9 @@ package it.finance.sb;
 
 import it.finance.sb.exception.*;
 import it.finance.sb.io.CsvImporter;
-import it.finance.sb.io.CsvImporterI;
+import it.finance.sb.io.ImporterI;
 import it.finance.sb.io.CsvWriter;
+import it.finance.sb.io.WriterI;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
@@ -28,8 +29,8 @@ public class FinanceTrackApplication {
     private static final UserService userService = new UserService();
     private static final TransactionService transactionService = new TransactionService(userService);
     private static final AccountService accountService = new AccountService(transactionService);
-    private static final CsvImporterI<AbstractTransaction> importer = new CsvImporter();
-    private static final CsvWriter<AbstractTransaction> writer = new CsvWriter<>("TransactionId,Type,Amount,From,To,Category,Reason,Date");
+    private static final ImporterI<AbstractTransaction> importer = new CsvImporter();
+    private static final WriterI<AbstractTransaction> writer = new CsvWriter<>("TransactionId,Type,Amount,From,To,Category,Reason,Date");
     private static final FileIOService fileIOService = new FileIOService(transactionService, userService, importer, writer);
     private static final InvestmentService investmentService = new InvestmentService(accountService, userService);
     private static final MementoService mementoService = new MementoService();

@@ -15,99 +15,85 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The type Account service.
+ * AccountService handles the creation, modification, deletion,
+ * and display logic for user accounts.
  */
 public class AccountService extends BaseService {
 
     private final TransactionService transactionService;
     private static final Logger logger = LoggerFactory.getInstance().getLogger(AccountService.class);
 
-    /**
-     * Instantiates a new Account service.
-     *
-     * @param transactionService the transaction service
-     */
     public AccountService(TransactionService transactionService) {
         this.transactionService = transactionService;
     }
 
     /**
-     * Create abstract account.
-     *
-     * @param type    the type
-     * @param name    the name
-     * @param balance the balance
-     * @return the abstract account
-     * @throws AccountOperationException,DataValidationException,UserLoginException the exception
+     * Creates and registers a new account.
      */
-    public AccountInterface create(AccounType type, String name, Double balance) throws AccountOperationException, DataValidationException, UserLoginException {
+    public AccountInterface create(AccounType type, String name, Double balance)
+            throws AccountOperationException, DataValidationException, UserLoginException {
+
         requireLoggedInUser();
 
+        if (type == null || name == null || name.isBlank() || balance == null || balance < 0) {
+            throw new AccountOperationException("Invalid input for account creation.");
+        }
+
         try {
-            if (type == null || name == null || name.isBlank() || balance == null || balance < 0) {
-                throw new AccountOperationException("Invalid input for account creation.");
-            }
-            //Create account using factory
-            AccountInterface accountCreated = AccountFactory.createAccount(type, name, balance);
-            //Sanitize the object
-            InputSanitizer.validate(accountCreated);
-            //Add to the current user context the account created
-            currentUser.addAccount(accountCreated);
+            AccountInterface account = AccountFactory.createAccount(type, name, balance);
+            InputSanitizer.validate(account);
+            currentUser.addAccount(account);
+
             logger.info(() -> String.format("[AccountService] Account created for user='%s' (type=%s)",
                     currentUser.getName(), type));
-            return accountCreated;
-        } catch (DataValidationException | AccountOperationException e) {
-            logger.warning("[AccountService] Account creation failed: " + e.getMessage());
-            throw e;
+            return account;
+
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error in account creation", e);
-            throw new AccountOperationException("Unexpected error during account creation.", e);
+            logger.log(Level.SEVERE, "Error during account creation", e);
+            throw new AccountOperationException("Account creation failed.", e);
         }
     }
 
     /**
-     * Delete abstract account.
-     *
-     * @param account the account
-     * @return the abstract account
+     * Deletes a user's account and all related transactions.
      */
-    public AccountInterface delete(AccountInterface account) throws AccountOperationException, UserLoginException {
+    public AccountInterface delete(AccountInterface account)
+            throws AccountOperationException, UserLoginException {
+
         requireLoggedInUser();
+
         if (account == null) {
             throw new AccountOperationException("Cannot delete a null account.");
         }
-        try {
-            // Remove all transactions linked to this account
-            transactionService.removeTransactionsForAccount(account);
 
-            // Remove account from user
+        try {
+            transactionService.removeTransactionsForAccount(account);
             currentUser.removeAccount(account);
+
             logger.info(() -> String.format("[AccountService] Account deleted (ID=%d)", account.getAccountId()));
             return account;
+
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error deleting account", e);
             throw new AccountOperationException("Failed to delete account.", e);
-
         }
     }
 
     /**
-     * Modify abstract account.
-     *
-     * @param account    the account
-     * @param type       the account type
-     * @param newName    the new name
-     * @param newBalance the new balance
-     * @return the abstract account
+     * Modifies an existing account's name, type, or balance.
      */
-    public AccountInterface modify(AccountInterface account, AccounType type, String newName, Double newBalance) throws DataValidationException, UserLoginException, AccountOperationException {
+    public AccountInterface modify(AccountInterface account, AccounType type, String newName, Double newBalance)
+            throws DataValidationException, UserLoginException, AccountOperationException {
+
         requireLoggedInUser();
+
         if (account == null) {
             throw new AccountOperationException("Cannot modify a null account.");
         }
+
         try {
             if (newName != null && !newName.trim().isEmpty()) {
-                account.setName(newName);
+                account.setName(newName.trim());
             }
             if (type != null) {
                 account.setType(type);
@@ -118,43 +104,42 @@ public class AccountService extends BaseService {
                 }
                 account.setDeposit(newBalance);
             }
+
             InputSanitizer.validate(account);
+
             logger.info(() -> String.format("[AccountService] Account modified (ID=%d)", account.getAccountId()));
             return account;
-        } catch (DataValidationException | AccountOperationException e) {
-            logger.warning("[AccountService] Modification failed: " + e.getMessage());
-            throw e;
+
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error modifying account", e);
-            throw new AccountOperationException("Unexpected error during account modification.", e);
+            logger.log(Level.SEVERE, "Error modifying account", e);
+            throw new AccountOperationException("Failed to modify account.", e);
         }
     }
 
     /**
-     * Display all account balances without the account used for movement
+     * Displays account list excluding a specific account (used for transfer scenarios).
      */
     public void displayAllAccount(AccountInterface accountInterfaceAvoid) {
-        if (currentUser.getAccountList().isEmpty()) {
+        List<AccountInterface> accountList = currentUser.getAccountList();
+
+        if (accountList.isEmpty()) {
             System.out.println(ConsoleStyle.warning(" No accounts found."));
-        } else {
-            logger.info("[UserService] Showing all balances for user '" + getCurrentUser().getName() + "'");
-            List<AccountInterface> accountList = getCurrentUser().getAccountList();
-            for (int i = 0; i < accountList.size(); i++) {
-                if (accountInterfaceAvoid == null || accountInterfaceAvoid != accountList.get(i)) {
-                    AccountInterface accountInterface = accountList.get(i);
-                    System.out.println(i + 1 + ") " + accountInterface);
-                }
+            return;
+        }
+
+        logger.info("[UserService] Showing all balances for user '" + currentUser.getName() + "'");
+        for (int i = 0; i < accountList.size(); i++) {
+            AccountInterface acc = accountList.get(i);
+            if (!acc.equals(accountInterfaceAvoid)) {
+                System.out.println((i + 1) + ") " + acc);
             }
         }
     }
 
-
     /**
-     * Display all account balances.
+     * Displays all user accounts.
      */
     public void displayAllAccount() {
         displayAllAccount(null);
     }
-
-
 }

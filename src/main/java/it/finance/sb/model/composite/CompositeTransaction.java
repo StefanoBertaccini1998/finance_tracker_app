@@ -1,18 +1,19 @@
 package it.finance.sb.model.composite;
 
 /**
- * The interface Composite transaction.
+ * CompositeTransaction represents a component in a composite structure.
+ * Leaf nodes are transactions, while composite nodes are lists of transactions.
  */
 public interface CompositeTransaction {
     /**
-     * Display transaction.
+     * Displays a single transaction or recursively displays all nested ones.
      */
     void displayTransaction();
 
     /**
-     * Gets total.
+     * Computes the total amount from this transaction or all nested ones.
      *
-     * @return the total
+     * @return total amount
      */
     double getTotal();
 }

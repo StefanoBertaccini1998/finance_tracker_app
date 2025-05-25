@@ -3,15 +3,10 @@ package it.finance.sb.service;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.logging.LoggerFactory;
-import it.finance.sb.model.account.AccountInterface;
-import it.finance.sb.model.transaction.AbstractTransaction;
-import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
 import it.finance.sb.utility.InputSanitizer;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -92,7 +87,6 @@ public class UserService extends BaseService {
         }
         return user;
     }
-
 
 
     /**

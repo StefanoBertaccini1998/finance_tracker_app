@@ -2,7 +2,7 @@ package it.finance.sb.service;
 
 import it.finance.sb.exception.FileIOException;
 import it.finance.sb.io.CsvImporter;
-import it.finance.sb.io.CsvImporterI;
+import it.finance.sb.io.ImporterI;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
@@ -26,7 +26,7 @@ public class FileIOServiceTest {
 
     private TransactionService transactionService;
     private UserService userService;
-    private CsvImporterI<AbstractTransaction> mockImporter;
+    private ImporterI<AbstractTransaction> mockImporter;
     private CsvWriter<AbstractTransaction> mockWriter;
     private FileIOService fileIOService;
 
@@ -114,5 +114,38 @@ public class FileIOServiceTest {
         assertDoesNotThrow(() -> fileIOService.importTransactions(Path.of("dummy.csv"), false, true));
 
         assertEquals(1, transactionService.getAllTransactionsFlattened().size());
+    }
+
+    @Test
+    void testImportTransactions_withAutoCreatedAccounts() throws Exception {
+        AbstractTransaction tx = new IncomeTransaction(100.0, "Gift", "Surprise", new Date(), account);
+
+        CsvImporter realImporter = mock(CsvImporter.class);
+        when(realImporter.importFrom(any(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenReturn(List.of(tx));
+        when(realImporter.getNewlyCreatedAccounts()).thenReturn(List.of(account));
+
+        fileIOService = new FileIOService(transactionService, userService, realImporter, mockWriter);
+        fileIOService.setCurrentUser(user);
+        transactionService.setCurrentUser(user);
+
+        assertDoesNotThrow(() -> fileIOService.importTransactions(Path.of("dummy.csv"), true, true));
+
+        assertTrue(user.getAccountList().contains(account));
+    }
+
+    @Test
+    void testImportTransactions_invalidAutoCreatedAccount() throws Exception {
+        AccountInterface invalid = mock(AccountInterface.class); // mock breaks validation
+
+        CsvImporter importer = mock(CsvImporter.class);
+        when(importer.importFrom(any(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenReturn(List.of());
+        when(importer.getNewlyCreatedAccounts()).thenReturn(List.of(invalid));
+
+        fileIOService = new FileIOService(transactionService, userService, importer, mockWriter);
+        fileIOService.setCurrentUser(user);
+
+        assertDoesNotThrow(() -> fileIOService.importTransactions(Path.of("dummy.csv"), true, true));
     }
 }

@@ -8,19 +8,19 @@ import it.finance.sb.model.transaction.TransactionType;
 import java.util.Date;
 
 /**
- * The type Expense transaction creator.
+ * ExpenseTransactionCreator builds EXPENSE transactions using the TransactionBuilder.
+ * Only 'from' account is required for this transaction type.
  */
 public class ExpenseTransactionCreator implements TransactionCreator {
     @Override
     public AbstractTransaction create(double amount, String category, String reason, Date date, AccountInterface to, AccountInterface from) {
-        TransactionBuilder builder = new TransactionBuilder()
+        return new TransactionBuilder()
                 .type(TransactionType.EXPENSE)
                 .amount(amount)
                 .category(category)
                 .reason(reason)
                 .date(date)
-                .from(from);
-
-        return builder.build();
+                .from(from)
+                .build();
     }
 }

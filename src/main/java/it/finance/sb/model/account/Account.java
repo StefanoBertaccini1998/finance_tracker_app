@@ -63,7 +63,11 @@ public class Account implements AccountInterface {
 
     @Override
     public void update(double amount) {
-        this.balance += amount;
+        double result = this.balance + amount;
+        if (result < 0) {
+            throw new IllegalArgumentException("Insufficient balance");
+        }
+        this.balance = result;
     }
 
     @Override

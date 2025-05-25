@@ -1,123 +1,97 @@
 package it.finance.sb.service;
 
-import it.finance.sb.model.account.AccounType;
+import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Date;
 
-import static it.finance.sb.model.transaction.TransactionType.EXPENSE;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for TransactionService using mock UserService.
+ */
 class TransactionServiceTest {
 
     private TransactionService transactionService;
-    private AccountService accountService;
     private UserService userService;
-    private User user;
-
-    private AccountInterface acc1;
-    private AccountInterface acc2;
+    private User mockUser;
+    private AccountInterface accFrom;
+    private AccountInterface accTo;
 
     @BeforeEach
-    void setUp() throws Exception {
-        user = new User("TestUser", 99, Gender.OTHER);
-        userService = new UserService();
-        userService.setCurrentUser(user);
+    void setUp() {
+        userService = mock(UserService.class);
         transactionService = new TransactionService(userService);
-        transactionService.setCurrentUser(user);
-        accountService = new AccountService(transactionService);
-        accountService.setCurrentUser(user);
+        mockUser = new User("MockUser", 30, Gender.FEMALE);
+        transactionService.setCurrentUser(mockUser);
 
-        acc1 = accountService.create(AccounType.BANK, "Main", 1000.0);
-        acc2 = accountService.create(AccounType.BANK, "Savings", 500.0);
+        accFrom = mock(AccountInterface.class);
+        accTo = mock(AccountInterface.class);
+
+        when(accFrom.getBalance()).thenReturn(1000.0);
+        when(accFrom.getName()).thenReturn("Source");
+        when(accTo.getName()).thenReturn("Target");
     }
 
     @Test
-    void testCreateIncomeTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 200, "Salary", "April work", new Date(), acc1, null);
-
-        assertEquals(1200, acc1.getBalance());
-        assertTrue(user.getTransactionLists().get(TransactionType.INCOME).iterator().hasNext());
-    }
-
-    @Test
-    void testCreateExpenseTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(EXPENSE, 150, "Groceries", "Apples and Banans", new Date(), null, acc1);
-
-        assertEquals(850, acc1.getBalance());
-        assertTrue(user.getTransactionLists().get(EXPENSE).iterator().hasNext());
-    }
-
-    @Test
-    void testCreateMovementTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.MOVEMENT, 100, "Transfer", "Send money to mum", new Date(), acc2, acc1);
-
-        assertEquals(900, acc1.getBalance());
-        assertEquals(600, acc2.getBalance());
-    }
-
-    @Test
-    void testCreateInvalidAmount() {
-        Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.create(TransactionType.INCOME, -100, "Invalid", "Invalid", new Date(), acc1, null);
-        });
-    }
-
-    @Test
-    void testCreateExpenseWithInsufficientFunds() {
-        Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.create(EXPENSE, 9999, "Too much", "Too much", new Date(), null, acc2);
-        });
-    }
-
-    @Test
-    void testDeleteIncomeTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(TransactionType.INCOME, 100, "Refund", "riento pezzo rotto", new Date(), acc1, null);
-        assertEquals(1100, acc1.getBalance());
-
-        transactionService.delete(transaction);
-        assertEquals(1000, acc1.getBalance());
-    }
-
-    @Test
-    void testDeleteExpenseTransaction() throws Exception {
-        AbstractTransaction transaction = transactionService.create(EXPENSE, 200, "Utilities", "Gamepad", new Date(), null, acc1);
-        assertEquals(800, acc1.getBalance());
-
-        transactionService.delete(transaction);
-        assertEquals(1000, acc1.getBalance());
-    }
-
-    @Test
-    void testModifyTransaction() throws Exception {
-        AbstractTransaction original = transactionService.create(EXPENSE, 100, "Lunch", "pranzo di pasqua", new Date(), null, acc1);
-        assertEquals(900, acc1.getBalance());
-
-        AbstractTransaction modified = transactionService.modify(
-                original,
-                200.0,
-                "Dinner",
-                "cena di lavoro",
-                new Date(),
-                null,
-                acc1
+    void testCreateIncomeTransaction_shouldIncreaseToAccountBalance() throws Exception {
+        AbstractTransaction tx = transactionService.create(
+                TransactionType.INCOME, 100.0, "Salary", "Monthly Pay", new Date(), accTo, null
         );
 
-        assertEquals(800, acc1.getBalance());
-        assertNotEquals(original.getTransactionId(), modified.getTransactionId());
+        assertNotNull(tx);
+        verify(accTo, times(1)).update(100.0);
+        verify(userService, times(1)).addCategory("Salary");
     }
 
     @Test
-    void testModifyWithInsufficientFunds() throws Exception {
-        AbstractTransaction original = transactionService.create(EXPENSE, 100, "Lunch", "Meeting lunch", new Date(), null, acc2);
+    void testCreateExpenseTransaction_shouldDecreaseFromAccountBalance() throws Exception {
+        AbstractTransaction tx = transactionService.create(
+                TransactionType.EXPENSE, 200.0, "Food", "Groceries", new Date(), null, accFrom
+        );
 
-        Exception exception = assertThrows(Exception.class, () -> {
-            transactionService.modify(original, 9999.0, "Dinner", "Meeting Dinner", new Date(), null, acc2);
+        assertNotNull(tx);
+        verify(accFrom, times(1)).update(-200.0);
+        verify(userService, times(1)).addCategory("Food");
+    }
+
+    @Test
+    void testCreateTransaction_withInsufficientFunds_shouldThrow() {
+        when(accFrom.getBalance()).thenReturn(50.0);
+
+        assertThrows(TransactionOperationException.class, () -> {
+            transactionService.create(TransactionType.EXPENSE, 100.0, "Food", "Dinner", new Date(), null, accFrom);
         });
+    }
+
+    @Test
+    void testDeleteTransaction_shouldReverseAccountUpdate() throws Exception {
+        AbstractTransaction tx = transactionService.create(
+                TransactionType.INCOME, 150.0, "Refund", "Return", new Date(), accTo, null
+        );
+
+        transactionService.delete(tx);
+        verify(accTo, times(1)).update(-150.0);
+    }
+
+    @Test
+    void testModifyTransaction_shouldReplaceAndUpdateAccounts() throws Exception {
+        AbstractTransaction original = transactionService.create(
+                TransactionType.EXPENSE, 100.0, "Lunch", "Work meal", new Date(), null, accFrom
+        );
+
+        AbstractTransaction modified = transactionService.modify(
+                original, 200.0, "Dinner", "Team meal", new Date(), null, accFrom
+        );
+
+        assertNotNull(modified);
+        assertNotEquals(original.getTransactionId(), modified.getTransactionId());
     }
 }

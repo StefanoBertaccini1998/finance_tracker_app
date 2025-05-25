@@ -4,29 +4,47 @@ import it.finance.sb.model.composite.CompositeTransaction;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
 
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
- * The type Concrete transaction iterator.
+ * Iterator over CompositeTransaction structure, supporting flattening.
+ * Uses internal stack to support depth-first traversal.
  */
 public class ConcreteTransactionIterator implements TransactionIterator {
-    private final List<CompositeTransaction> transactions;
-    private int currentIndex = 0;
-    private int lastReturnedIndex = -1;
 
-    /**
-     * Instantiates a new Concrete transaction iterator.
-     *
-     * @param transactions the transactions
-     */
-    public ConcreteTransactionIterator(List<CompositeTransaction> transactions) {
-        this.transactions = transactions;
+    private final Deque<Iterator<CompositeTransaction>> stack = new ArrayDeque<>();
+    private AbstractTransaction nextItem;
+    private final Iterator<CompositeTransaction> currentIterator;
+
+    public ConcreteTransactionIterator(List<CompositeTransaction> rootList) {
+        this.currentIterator = rootList.iterator();
+        this.stack.push(this.currentIterator);
+        advance();
+    }
+
+    private void advance() {
+        nextItem = null;
+        while (!stack.isEmpty()) {
+            Iterator<CompositeTransaction> it = stack.peek();
+            while (true) {
+                assert it != null;
+                if (!it.hasNext()) break;
+                CompositeTransaction ct = it.next();
+                if (ct instanceof AbstractTransaction tx) {
+                    nextItem = tx;
+                    return;
+                } else if (ct instanceof TransactionList nested) {
+                    stack.push(nested.getInternalList().iterator());
+                    it = stack.peek(); // continue with the newly added iterator
+                }
+            }
+            stack.pop(); // current iterator is exhausted
+        }
     }
 
     @Override
     public boolean hasNext() {
-        return currentIndex < transactions.size();
+        return nextItem != null;
     }
 
     @Override
@@ -34,30 +52,18 @@ public class ConcreteTransactionIterator implements TransactionIterator {
         if (!hasNext()) {
             throw new NoSuchElementException("No more transactions.");
         }
-
-        CompositeTransaction ct = transactions.get(currentIndex);
-        lastReturnedIndex = currentIndex++; // ✅ track the one returned
-        if (ct instanceof AbstractTransaction transaction) {
-            return transaction;
-        } else if (ct instanceof TransactionList nested) {
-            TransactionIterator nestedIt = nested.iterator();
-            return nestedIt.hasNext() ? nestedIt.next() : null; // TODO ❌ currently unsafe
-        } else {
-            throw new IllegalStateException("Invalid transaction type at index " + lastReturnedIndex);
-        }
+        AbstractTransaction current = nextItem;
+        advance();
+        return current;
     }
 
     @Override
     public void remove() {
-        if (lastReturnedIndex < 0) {
-            throw new IllegalStateException("Cannot remove before calling next()");
-        }
-        transactions.remove(lastReturnedIndex);
-        if (lastReturnedIndex < currentIndex) {
-            currentIndex--; // adjust if we removed something before where we’re going
-        }
-        lastReturnedIndex = -1; // reset so user can't call remove twice
+        throw new UnsupportedOperationException("Remove not supported in flattened iterator.");
     }
 
-
+    // Internal hook for recursion
+    public Iterator<CompositeTransaction> getInternalIterator() {
+        return this.currentIterator;
+    }
 }

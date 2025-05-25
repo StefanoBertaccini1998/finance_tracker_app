@@ -3,14 +3,11 @@ package it.finance.sb.model.user;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.finance.sb.annotation.Sanitize;
 import it.finance.sb.model.account.AccountInterface;
-import it.finance.sb.model.composite.CompositeTransaction;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 /**
  * The type User.
@@ -164,7 +161,7 @@ public class User {
      * @return the boolean
      */
     public boolean isCategoryAllowed(String category) {
-        return categorySet.contains(category);
+        return categorySet.contains(category.toLowerCase());
     }
 
     /**
@@ -173,7 +170,7 @@ public class User {
      * @param category the category
      */
     public void addCategory(String category) {
-        categorySet.add(category);
+        categorySet.add(category.toLowerCase());
     }
 
     /**
@@ -195,7 +192,7 @@ public class User {
         for (AccountInterface account : accountList) {
             result.put(account.getName(), account.getBalance());
         }
-        return result;
+        return Map.copyOf(result);
     }
 
 

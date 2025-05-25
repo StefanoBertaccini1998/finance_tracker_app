@@ -9,10 +9,15 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * The type Transaction list.
+ * TransactionList is a composite node that can contain individual transactions or nested TransactionLists.
+ * Implements Composite pattern.
  */
 public class TransactionList implements CompositeTransaction {
-    private List<CompositeTransaction> transactionList;
+    private final List<CompositeTransaction> transactionList;
+
+    public TransactionList() {
+        this.transactionList = new ArrayList<>();
+    }
 
     @Override
     public void displayTransaction() {
@@ -22,82 +27,43 @@ public class TransactionList implements CompositeTransaction {
     @Override
     public double getTotal() {
         return transactionList.stream()
-                .filter(t -> t instanceof AbstractTransaction)
-                .map(t -> (AbstractTransaction) t)
-                .mapToDouble(AbstractTransaction::getAmount)
+                .mapToDouble(CompositeTransaction::getTotal)
                 .sum();
     }
 
-    /**
-     * Instantiates a new Transaction list.
-     */
-    public TransactionList() {
-        this.transactionList = new ArrayList<>();
-    }
-
-    /**
-     * Add transaction.
-     *
-     * @param transaction the transaction
-     */
-    public void addTransaction(AbstractTransaction transaction) {
+    public void addTransaction(CompositeTransaction transaction) {
         transactionList.add(transaction);
     }
 
-    /**
-     * Add transactions.
-     *
-     * @param transactions the transactions
-     */
-    public void addTransactions(List<AbstractTransaction> transactions) {
-        transactions.forEach(this::addTransaction);
+    public void addTransactions(List<? extends CompositeTransaction> transactions) {
+        transactionList.addAll(transactions);
     }
 
-    /**
-     * Remove.
-     *
-     * @param transaction the transaction
-     */
-    public void remove(AbstractTransaction transaction) {
+    public void remove(CompositeTransaction transaction) {
         transactionList.remove(transaction);
     }
 
-    /**
-     * Iterator transaction iterator.
-     *
-     * @return the transaction iterator
-     */
-    public TransactionIterator iterator() {
-        return new ConcreteTransactionIterator(this.transactionList);
+    public ConcreteTransactionIterator iterator() {
+        return new ConcreteTransactionIterator(transactionList);
     }
 
-    /**
-     * Get all the transaction in the map.
-     *
-     * @return the transaction iterator
-     */
+    public List<CompositeTransaction> getInternalList() {
+        return transactionList;
+    }
+
     public List<AbstractTransaction> getFlattenedTransactions() {
-            List<AbstractTransaction> result = new ArrayList<>();
-            TransactionIterator iterator = this.iterator();
-            while (iterator.hasNext()) {
-                result.add(iterator.next());
-            }
-            return result;
+        List<AbstractTransaction> result = new ArrayList<>();
+        TransactionIterator iterator = this.iterator();
+        while (iterator.hasNext()) {
+            result.add(iterator.next());
+        }
+        return result;
     }
 
-    /**
-     * Modify transaction by id boolean.
-     *
-     * @param id       the id
-     * @param modifier the modifier
-     * @return the boolean
-     */
-    //TODO un po' complesso pure per le mie capacità
-    //TODO Valutare la complessità della possibile istanza singola transaction come compoiste transaction e se deve essere aggiunto alla interface
     public boolean modifyTransactionById(int id, Consumer<AbstractTransaction> modifier) {
         for (CompositeTransaction ct : transactionList) {
             if (ct instanceof AbstractTransaction tx && tx.getTransactionId() == id) {
-                modifier.accept(tx); // apply external mutation securely
+                modifier.accept(tx);
                 return true;
             } else if (ct instanceof TransactionList nested) {
                 if (nested.modifyTransactionById(id, modifier)) return true;
@@ -107,28 +73,20 @@ public class TransactionList implements CompositeTransaction {
     }
 
     /**
-     * Filter by reason list.
+     * Filters transactions by category.
      *
-     * @param reason the reason
-     * @return the list
+     * @param category the category name
+     * @return list of matching transactions
      */
-    public List<AbstractTransaction> filterByReason(String reason) {
-        return transactionList.stream()
-                .filter(t -> t instanceof AbstractTransaction tx && tx.getReason().equalsIgnoreCase(reason))
-                .map(t -> (AbstractTransaction) t)
+    public List<AbstractTransaction> filterByCategory(String category) {
+        return getFlattenedTransactions().stream()
+                .filter(tx -> tx.getCategory().equalsIgnoreCase(category))
                 .toList();
     }
 
-    /**
-     * Filter by min amount list.
-     *
-     * @param min the min
-     * @return the list
-     */
     public List<AbstractTransaction> filterByMinAmount(double min) {
-        return transactionList.stream()
-                .filter(t -> t instanceof AbstractTransaction tx && tx.getAmount() >= min)
-                .map(t -> (AbstractTransaction) t)
+        return getFlattenedTransactions().stream()
+                .filter(tx -> tx.getAmount() >= min)
                 .toList();
     }
 }

@@ -67,4 +67,10 @@ class UserServiceTest {
         assertEquals("Bonus", retrieved.getReason());
         assertEquals(TransactionType.INCOME, retrieved.getType());
     }
+    @Test
+    void testAddCategoryShouldIgnoreDuplicates() throws Exception {
+        userService.addCategory("Custom");
+        userService.addCategory("custom");
+        assertEquals(1, user.getCategorySet().stream().filter(c -> c.equalsIgnoreCase("Custom")).count());
+    }
 }

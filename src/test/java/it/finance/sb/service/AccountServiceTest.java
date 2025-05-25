@@ -1,70 +1,65 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
-import it.finance.sb.model.transaction.AbstractTransaction;
-import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
-import org.junit.jupiter.api.*;
-
-import java.util.Date;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+/**
+ * Unit test for AccountService using Mockito to mock TransactionService.
+ */
 class AccountServiceTest {
 
     private AccountService accountService;
-    private UserService userService;
     private TransactionService transactionService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        user = new User("TestUser", 26, Gender.MALE);
-        userService = new UserService();
-        userService.setCurrentUser(user);
-        transactionService = new TransactionService(userService);
-        transactionService.setCurrentUser(user);
+        transactionService = mock(TransactionService.class);
         accountService = new AccountService(transactionService);
+        user = new User("MockedUser", 25, Gender.MALE);
         accountService.setCurrentUser(user);
     }
 
     @Test
-    void testCreateAccount() throws Exception {
-        AccountInterface account = accountService.create(AccounType.BANK, "Savings", 1000.0);
+    void testCreateValidAccount_shouldSucceed() throws Exception {
+        AccountInterface account = accountService.create(AccounType.BANK, "MockBank", 500.0);
+
         assertNotNull(account);
-        assertEquals("Savings", account.getName());
-        assertEquals(1000.0, account.getBalance());
+        assertEquals("MockBank", account.getName());
+        assertEquals(500.0, account.getBalance());
         assertTrue(user.getAccountList().contains(account));
     }
 
     @Test
-    void testModifyAccount() throws Exception {
-        AccountInterface account = accountService.create(AccounType.BANK, "Main", 500.0);
-        AccountInterface modified = accountService.modify(account, null, "Main Updated", 750.0);
-
-        assertEquals("Main Updated", modified.getName());
-        assertEquals(750.0, modified.getBalance());
+    void testCreateAccount_withInvalidBalance_shouldFail() {
+        assertThrows(AccountOperationException.class, () ->
+                accountService.create(AccounType.BANK, "Invalid", -100.0));
     }
 
     @Test
-    void testDeleteAccountAlsoRemovesTransactions() throws Exception {
-        // Create account and another to use in movement
-        AccountInterface toDelete = accountService.create(AccounType.BANK, "Victim", 500.0);
-        AccountInterface other = accountService.create(AccounType.BANK, "Other", 500.0);
+    void testModifyAccount_shouldApplyChanges() throws Exception {
+        AccountInterface account = accountService.create(AccounType.BANK, "Start", 100.0);
+        AccountInterface modified = accountService.modify(account, null, "Updated", 300.0);
 
-        // Create a transaction that uses the account
-        AbstractTransaction tx = transactionService.create(TransactionType.EXPENSE, 100, "TestExpense", "DeleteExpense", new Date(), null, toDelete);
+        assertEquals("Updated", modified.getName());
+        assertEquals(300.0, modified.getBalance());
+    }
 
-        assertEquals(400, toDelete.getBalance());
+    @Test
+    void testDeleteAccount_shouldRemoveAndCallTransactionCleanup() throws Exception {
+        AccountInterface account = accountService.create(AccounType.BANK, "ToDelete", 100.0);
+        AccountInterface deleted = accountService.delete(account);
 
-        // Now delete the account
-        AccountInterface deleted = accountService.delete(toDelete);
-
-        assertEquals(toDelete, deleted);
-        assertFalse(user.getAccountList().contains(toDelete));
-
-        assertFalse(user.getTransactionLists().get(TransactionType.EXPENSE).iterator().hasNext());
+        assertEquals(account, deleted);
+        assertFalse(user.getAccountList().contains(account));
+        verify(transactionService, times(1)).removeTransactionsForAccount(account);
     }
 }
