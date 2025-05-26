@@ -43,7 +43,7 @@ class UserServiceTest {
 
         AccountInterface acc = new Account("Main", 1000.0, AccounType.BANK);
 
-        when(factory.createAccount(AccounType.BANK, eq("Main"), eq(1000.0)))
+        when(factory.createAccount(eq(AccounType.BANK), eq("Main"), eq(1000.0)))
                 .thenReturn(acc);
 
         accountService.create(AccounType.BANK, "Main", 1000.0);
