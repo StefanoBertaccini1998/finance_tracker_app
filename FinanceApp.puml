@@ -1,9 +1,11 @@
 @startuml FinanceTrackApp
-
-skinparam classAttributeIconSize 0
 skinparam style strictuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam backgroundColor #fdfdfd
 
-package "Model" {
+' ==== MODEL ====
+package "📦 Model" {
     class User {
         - int userId
         - String name
@@ -14,7 +16,7 @@ package "Model" {
         - Set<String> categorySet
     }
 
-    class AbstractTransaction {
+    abstract class AbstractTransaction {
         - int transactionId
         - double amount
         - String reason
@@ -33,11 +35,9 @@ package "Model" {
 
     class TransactionList {
         - List<AbstractTransaction> transactions
-        + addTransaction()
-        + remove()
-        + getFlattenedTransactions()
     }
 
+    interface AccountInterface
     class Account {
         - int accountId
         - String name
@@ -45,58 +45,52 @@ package "Model" {
         - AccounType type
     }
 
-    interface AccountInterface
-
     AccountInterface <|.. Account
-    User "1" o-- "many" AccountInterface
-    User "1" o-- "many" TransactionList
+    User "1" o-- "*" AccountInterface
+    User "1" o-- "*" TransactionList
     TransactionList "1" o-- "*" AbstractTransaction
 }
 
-package "Services" {
+' ==== SERVICES ====
+package "🔧 Services" {
     class BaseService {
         - User currentUser
-        + setCurrentUser()
-        + getCurrentUser()
     }
 
     class UserService
     class AccountService
     class TransactionService
     class FileIOService
-    class InvestmentService
     class MementoService
 
     BaseService <|-- UserService
     BaseService <|-- AccountService
     BaseService <|-- TransactionService
     BaseService <|-- FileIOService
-    BaseService <|-- InvestmentService
+    BaseService <|-- MementoService
 }
 
-package "IO & Import" {
+' ==== I/O ====
+package "🗂️ IO / Import" {
     interface CsvImporter<T>
     interface CsvWriter<T>
     class CsvTransactionImporter
     class CsvExporter
-    class CsvSerializable {
-        + String toCsv()
-        + static fromCsv()
-    }
 
     CsvImporter <|.. CsvTransactionImporter
     CsvWriter <|.. CsvExporter
     AbstractTransaction ..|> CsvSerializable
 }
 
-package "Factory & Strategy" {
+' ==== FACTORY ====
+package "🏭 Factory & Strategy" {
     interface TransactionCreator {
         + create(...)
     }
 
     class TransactionFactory {
-        + static createTransaction()
-        + Map<TransactionType, TransactionCreator>
+        + createTransaction()
+        - Map<TransactionType, TransactionCreator>
     }
 
     class IncomeTransactionCreator
@@ -108,24 +102,29 @@ package "Factory & Strategy" {
     TransactionCreator <|.. MovementTransactionCreator
 }
 
-package "Composite & Iterator" {
-    interface CompositeTransaction {
-        + getTransactionId()
-    }
-
-    class TransactionIterator
-    CompositeTransaction <|.. AbstractTransaction
-}
-
-package "Utility & Annotations" {
+' ==== UTILITIES ====
+package "🔧 Utilities" {
     class InputSanitizer {
-        + static validate(Object)
+        + validate(Object)
     }
 
     annotation Sanitize
+
     AbstractTransaction .. Sanitize
     User .. Sanitize
     Account .. Sanitize
+}
+
+' ==== MEMENTO ====
+package "💾 Memento" {
+    class MementoService
+    class UserSnapshot
+    class UserMapper
+    class UserMementoManager
+
+    MementoService --> UserSnapshot
+    UserSnapshot --> User
+    MementoService --> UserMementoManager
 }
 
 @enduml

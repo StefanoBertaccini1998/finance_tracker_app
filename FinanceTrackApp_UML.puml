@@ -1,0 +1,177 @@
+
+@startuml FinanceTrackApp
+
+' === GLOBAL STYLE ===
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty methods
+
+' === PACKAGES ===
+
+package "model.account" {
+  interface AccountInterface
+  enum AccounType
+
+  class Account {
+    - int accountId
+    - String name
+    - double balance
+    - AccounType type
+    + getName()
+    + getBalance()
+    + update(double)
+  }
+
+  AccountInterface <|.. Account
+}
+
+package "model.transaction" {
+  enum TransactionType
+
+  interface CompositeTransaction
+  interface CsvSerializable
+
+  abstract class AbstractTransaction {
+    - int transactionId
+    - double amount
+    - String reason
+    - String category
+    - Date date
+    - TransactionType type
+    + getAmount()
+    + getDate()
+    + getType()
+    + getTransactionId()
+  }
+
+  class IncomeTransaction
+  class ExpenseTransaction
+  class MovementTransaction
+
+  AbstractTransaction <|-- IncomeTransaction
+  AbstractTransaction <|-- ExpenseTransaction
+  AbstractTransaction <|-- MovementTransaction
+  AbstractTransaction ..|> CsvSerializable
+  AbstractTransaction ..|> CompositeTransaction
+}
+
+package "model.user" {
+  enum Gender
+
+  class User {
+    - int userId
+    - String name
+    - int age
+    - Gender gender
+    - Map<TransactionType, TransactionList> transactionLists
+    - List<AccountInterface> accountList
+    + getAccountList()
+    + addAccount()
+    + addTransaction()
+  }
+}
+
+package "model.iterator" {
+  interface TransactionIterator
+  class ConcreteTransactionIterator
+  TransactionIterator <|.. ConcreteTransactionIterator
+}
+
+package "model.composite" {
+  class TransactionList {
+    - List<AbstractTransaction> transactions
+    + addTransaction()
+    + getFlattenedTransactions()
+  }
+}
+
+package "factory" {
+  interface TransactionCreator
+  interface TransactionAbstractFactory
+  interface FinanceAbstractFactory
+
+  class TransactionFactory {
+    + createIncome(...)
+    + createExpense(...)
+    + createMovement(...)
+  }
+
+  class DefaultFinanceFactory {
+    + createAccount(...)
+  }
+
+  class AccountFactory
+
+  TransactionAbstractFactory <|.. TransactionFactory
+  FinanceAbstractFactory <|.. DefaultFinanceFactory
+  TransactionCreator <|.. IncomeTransactionCreator
+  TransactionCreator <|.. ExpenseTransactionCreator
+  TransactionCreator <|.. MovementTransactionCreator
+}
+
+package "io" {
+  interface ImporterI
+  interface WriterI
+
+  class CsvWriter
+  class CsvImporter
+
+  CsvWriter ..|> WriterI
+  CsvImporter ..|> ImporterI
+}
+
+package "service" {
+  abstract class BaseService {
+    - User currentUser
+    + getCurrentUser()
+    + requireLoggedInUser()
+  }
+
+  class UserService
+  class AccountService
+  class TransactionService
+  class MementoService
+  class FileIOService
+
+  BaseService <|-- UserService
+  BaseService <|-- AccountService
+  BaseService <|-- TransactionService
+  BaseService <|-- FileIOService
+}
+
+package "mapper" {
+  class UserSnapshot
+  class UserMapper
+}
+
+package "memento" {
+  class UserMementoManager
+}
+
+package "utility" {
+  class InputSanitizer
+  annotation Sanitize
+}
+
+package "logging" {
+  class LoggerFactory
+}
+
+' === RELATIONS ===
+
+User --> TransactionList
+User --> AccountInterface
+UserMapper --> UserSnapshot
+UserMapper --> User
+TransactionService --> FinanceAbstractFactory
+AccountService --> FinanceAbstractFactory
+TransactionService --> UserService
+FileIOService --> TransactionService
+FileIOService --> UserService
+FileIOService --> ImporterI
+FileIOService --> WriterI
+MementoService --> UserMementoManager
+MementoService --> UserMapper
+
+@enduml

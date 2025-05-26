@@ -102,7 +102,7 @@ class FileIOServiceTest {
         when(mockImporter.importFrom(any(), any(), anyBoolean(), anyBoolean(), any()))
                 .thenThrow(new RuntimeException("Import failed"));
 
-        assertThrows(IOException.class, () -> fileIOService.importTransactions(inputPath, false, false));
+        assertThrows(FileIOException.class, () -> fileIOService.importTransactions(inputPath, false, false));
     }
 
     @Test
