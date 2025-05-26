@@ -1,4 +1,4 @@
-package it.finance.sb.cliController;
+package it.finance.sb.clicontroller;
 
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.MementoException;
@@ -24,6 +24,7 @@ import java.util.logging.Logger;
  */
 public class UserMenuCliController implements MenuCliController {
 
+    public static final String OPERATION_CANCELLED = " Operation cancelled.";
     private final UserService userService;
     private final MementoService mementoService;
     private final Logger logger;
@@ -87,7 +88,7 @@ public class UserMenuCliController implements MenuCliController {
 
             int selected = ConsoleUtils.showMenu("Select a saved user", savedUsers.toArray(new String[0]));
             if (selected == -1) {
-                System.out.println(ConsoleStyle.back(" Operation cancelled."));
+                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
                 return;
             }
 
@@ -104,7 +105,7 @@ public class UserMenuCliController implements MenuCliController {
             logger.log(Level.SEVERE, "Failed to load user", e);
             System.out.println(ConsoleStyle.error(" Failed to load user."));
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
         }
     }
 
@@ -141,7 +142,7 @@ public class UserMenuCliController implements MenuCliController {
             System.out.println(ConsoleStyle.error(" Could not save user."));
             createNewUser();
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
         }
     }
 

@@ -15,7 +15,7 @@ import java.util.logging.Logger;
  */
 public class UserService extends BaseService {
 
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(UserService.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(UserService.class);
 
     /**
      * Create user.
@@ -102,7 +102,7 @@ public class UserService extends BaseService {
         }
         if (!currentUser.isCategoryAllowed(category)) {
             currentUser.addCategory(category);
-            logger.info("[UserService] Added category: '" + category + "'");
+            logger.info(()->"[UserService] Added category: '" + category + "'");
         }
     }
 

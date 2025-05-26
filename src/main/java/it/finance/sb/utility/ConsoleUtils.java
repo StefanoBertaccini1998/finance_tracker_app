@@ -9,6 +9,10 @@ public class ConsoleUtils {
 
     private static final Scanner scanner = new Scanner(System.in);
 
+    private ConsoleUtils() {
+        throw new IllegalStateException("Utility class");
+    }
+
     public static int showMenu(String title, String... options) throws UserCancelledException {
         return showMenu(title, true, options);
     }

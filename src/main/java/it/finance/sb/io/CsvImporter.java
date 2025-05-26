@@ -1,10 +1,8 @@
 package it.finance.sb.io;
 
-import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.TransactionOperationException;
-import it.finance.sb.factory.AccountFactory;
-import it.finance.sb.factory.TransactionFactory;
+import it.finance.sb.factory.FinanceAbstractFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
@@ -27,9 +25,15 @@ import java.util.logging.Logger;
  */
 public class CsvImporter implements ImporterI<AbstractTransaction> {
 
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(CsvImporter.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(CsvImporter.class);
     private final List<AccountInterface> newlyCreatedAccounts = new ArrayList<>();
     private static final String EXPECTED_HEADER = "TransactionId,Type,Amount,From,To,Category,Reason,Date";
+
+    private final FinanceAbstractFactory factory;
+
+    public CsvImporter(FinanceAbstractFactory factory) {
+        this.factory = factory;
+    }
 
     @Override
     public List<AbstractTransaction> importFrom(Path inputFile,
@@ -37,7 +41,7 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
                                                 boolean autoCreateMissingAccounts,
                                                 boolean skipBadLines,
                                                 List<String> errorLog) throws IOException, DataValidationException {
-        logger.info("Starting import from CSV: " + inputFile);
+        logger.info(() -> "Starting import from CSV: " + inputFile);
         if (!Files.exists(inputFile) || !Files.isRegularFile(inputFile)) {
             throw new IOException("Input file not found or invalid.");
         }
@@ -63,7 +67,7 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
                     AbstractTransaction transaction = parseLine(line, lineNum, accountMap, autoCreateMissingAccounts);
                     InputSanitizer.validate(transaction);
                     transactions.add(transaction);
-                    logger.fine("Parsed transaction: " + transaction);
+                    logger.fine(()->"Parsed transaction: " + transaction);
                 } catch (Exception e) {
                     String msg = "[Line " + lineNum + "] " + e.getMessage();
                     if (errorLog != null) errorLog.add(msg);
@@ -74,14 +78,14 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
                 }
             }
         }
-        logger.info("Completed import. Total parsed: " + transactions.size());
+        logger.info(()->"Completed import. Total parsed: " + transactions.size());
         return transactions;
     }
 
     private AbstractTransaction parseLine(String line,
                                           int lineNum,
                                           Map<String, AccountInterface> accountMap,
-                                          boolean autoCreate) throws DataValidationException, AccountOperationException, TransactionOperationException {
+                                          boolean autoCreate) throws DataValidationException, TransactionOperationException {
 
         String[] fields = line.split(",", -1);
         if (fields.length < 8) throw new DataValidationException("Line " + lineNum + ": too few fields.");
@@ -99,7 +103,11 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
 
         validateRequiredAccounts(type, from, to);
 
-        return TransactionFactory.createTransaction(type, amount, category, reason, date, to, from);
+        return switch (type) {
+            case INCOME -> factory.createIncome(amount, category, reason, date, to);
+            case EXPENSE -> factory.createExpense(amount, category, reason, date, from);
+            case MOVEMENT -> factory.createMovement(amount, category, reason, date, to, from);
+        };
     }
 
     private void validateRequiredAccounts(TransactionType type,
@@ -113,20 +121,20 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
                 if (from == null) throw new DataValidationException("Missing source account for EXPENSE");
             }
             case MOVEMENT -> {
-                if (from == null || to == null)
-                    throw new DataValidationException("Missing accounts for MOVEMENT");
+                if (from == null) throw new DataValidationException("Missing source account for MOVEMENT");
+                if (to == null) throw new DataValidationException("Missing destination account for MOVEMENT");
             }
         }
     }
 
     private AccountInterface resolveAccount(Map<String, AccountInterface> accountMap,
                                             String name,
-                                            boolean autoCreate) throws AccountOperationException, DataValidationException {
+                                            boolean autoCreate) throws DataValidationException {
         if (name.isBlank()) return null;
 
         AccountInterface account = accountMap.get(name);
         if (account == null && autoCreate) {
-            account = AccountFactory.createAccount(AccounType.BANK, name, 0.00);
+            account = factory.createAccount(AccounType.BANK, name, 0.00);
             accountMap.put(name, account);
             newlyCreatedAccounts.add(account);
         }

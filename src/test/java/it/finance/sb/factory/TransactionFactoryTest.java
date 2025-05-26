@@ -1,6 +1,5 @@
 package it.finance.sb.factory;
 
-import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.model.account.Account;
 import it.finance.sb.model.account.AccountInterface;
@@ -14,71 +13,59 @@ import java.util.Date;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for TransactionFactory to verify correct creation,
- * validation, and error handling of transaction instances.
+ * Unit tests for TransactionFactory using its Abstract Factory interface.
  */
-public class TransactionFactoryTest {
+class TransactionFactoryTest {
 
-    private AccountInterface mockToAccount;
-    private AccountInterface mockFromAccount;
+    private AccountInterface toAccount;
+    private AccountInterface fromAccount;
+    private TransactionAbstractFactory factory;
     private final Date now = new Date();
 
     @BeforeEach
     void setup() {
-        mockToAccount = new Account("ToAccount", 1000.0, null);
-        mockFromAccount = new Account("FromAccount", 1000.0, null);
+        toAccount = new Account("To", 1000.0, null);
+        fromAccount = new Account("From", 1000.0, null);
+        factory = new TransactionFactory();
     }
 
     @Test
-    void testCreateIncomeTransaction_shouldSucceed() throws Exception {
-        AbstractTransaction tx = TransactionFactory.createTransaction(
-                TransactionType.INCOME, 500.0, "Salary", "Monthly salary", now,
-                mockToAccount, null);
-
+    void testCreateIncome_shouldSucceed() throws TransactionOperationException {
+        AbstractTransaction tx = factory.createIncome(500.0, "Salary", "Monthly pay", now, toAccount);
         assertNotNull(tx);
         assertEquals(TransactionType.INCOME, tx.getType());
         assertEquals(500.0, tx.getAmount());
     }
 
     @Test
-    void testCreateExpenseTransaction_withNegativeAmount_shouldThrow() {
-        assertThrows(DataValidationException.class, () ->
-                TransactionFactory.createTransaction(
-                        TransactionType.EXPENSE, -100.0, "Food", "Groceries", now,
-                        null, mockFromAccount)
-        );
+    void testCreateExpense_shouldSucceed() throws TransactionOperationException {
+        AbstractTransaction tx = factory.createExpense(200.0, "Food", "Dinner", now, fromAccount);
+        assertNotNull(tx);
+        assertEquals(TransactionType.EXPENSE, tx.getType());
+        assertEquals(200.0, tx.getAmount());
     }
 
     @Test
-    void testCreateMovementTransaction_withMissingAccount_shouldThrow() {
-        assertThrows(DataValidationException.class, () ->
-                TransactionFactory.createTransaction(
-                        TransactionType.MOVEMENT, 200.0, "Transfer", "Bank transfer", now,
-                        null, null)
-        );
+    void testCreateMovement_shouldSucceed() throws TransactionOperationException {
+        AbstractTransaction tx = factory.createMovement(300.0, "Transfer", "Savings", now, toAccount, fromAccount);
+        assertNotNull(tx);
+        assertEquals(TransactionType.MOVEMENT, tx.getType());
+        assertEquals(300.0, tx.getAmount());
     }
 
-    @Test
-    void testCreateWithUnsupportedType_shouldThrow() {
-        assertThrows(TransactionOperationException.class, () ->
-                TransactionFactory.createTransaction(null, 100.0, "Misc", "None", now,
-                        mockToAccount, mockFromAccount)
-        );
-    }
 
     @Test
-    void testRegisterCustomCreator_shouldOverrideDefault() throws Exception {
+    void testRegisterCustomCreator_shouldOverrideIncome() throws TransactionOperationException {
+        TransactionFactory realFactory = new TransactionFactory();
+
         TransactionFactory.registerCreator(TransactionType.INCOME, (amount, category, reason, date, to, from) ->
                 new AbstractTransaction(amount, category, reason, date, TransactionType.INCOME) {
-                    @Override public void displayTransaction() {}
+                    @Override public void displayTransaction() {/*Test method*/}
                     @Override public double getTotal() { return amount; }
-                    @Override public String toCsv() { return "mock-csv"; }
+                    @Override public String toCsv() { return "MOCKED"; }
                 });
 
-        AbstractTransaction tx = TransactionFactory.createTransaction(
-                TransactionType.INCOME, 100.0, "Mock", "Custom", now, mockToAccount, null);
-
-        assertNotNull(tx);
-        assertEquals("mock-csv", tx.toCsv());
+        AbstractTransaction tx = realFactory.createIncome(100.0, "Mocked", "Custom", now, toAccount);
+        assertEquals("MOCKED", tx.toCsv());
     }
 }

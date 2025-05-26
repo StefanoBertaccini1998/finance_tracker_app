@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class MementoService {
 
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(MementoService.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(MementoService.class);
 
     /**
      * Save user.
@@ -32,7 +32,6 @@ public class MementoService {
             UserMementoManager.save(snapshot);
             logger.info("[MementoService] User '" + user.getName() + "' saved successfully.");
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[MementoService] Error saving user: " + user.getName(), e);
             throw new MementoException("Could not save user. Internal error.", e);
         }
     }
@@ -53,7 +52,6 @@ public class MementoService {
             Optional<UserSnapshot> snapshotOpt = UserMementoManager.load(username);
             return snapshotOpt.map(UserMapper::fromSnapshot);
         } catch (Exception e) {
-            logger.severe("[MementoService] Error loading user '" + username + "':\n" + e.getMessage());
             throw new MementoException("Failed to load user data.", e);
         }
     }
@@ -76,7 +74,7 @@ public class MementoService {
     public boolean deleteUser(String username) {
         try {
             boolean deleted = UserMementoManager.delete(username);
-            logger.info("[MementoService] Deleted user '" + username + "'");
+            logger.info(()->"[MementoService] Deleted user '" + username + "'");
             return deleted;
         } catch (Exception e) {
             logger.log(Level.WARNING, "[MementoService] Failed to delete user '" + username + "'", e);

@@ -1,3 +1,4 @@
+/*
 package it.finance.sb;
 
 import it.finance.sb.exception.*;
@@ -27,6 +28,7 @@ import java.util.logging.Logger;
 public class FinanceTrackApplication {
 
     private static final UserService userService = new UserService();
+    private static final
     private static final TransactionService transactionService = new TransactionService(userService);
     private static final AccountService accountService = new AccountService(transactionService);
     private static final ImporterI<AbstractTransaction> importer = new CsvImporter();
@@ -406,3 +408,4 @@ public class FinanceTrackApplication {
     }
 
 }
+*/

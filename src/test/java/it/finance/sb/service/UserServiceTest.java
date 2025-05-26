@@ -1,9 +1,12 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.DataValidationException;
+import it.finance.sb.factory.FinanceAbstractFactory;
 import it.finance.sb.model.account.AccounType;
+import it.finance.sb.model.account.Account;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
+import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
@@ -14,11 +17,15 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class UserServiceTest {
 
     private UserService userService;
     private AccountService accountService;
+    private FinanceAbstractFactory factory;
     private TransactionService transactionService;
     private User user;
 
@@ -26,13 +33,25 @@ class UserServiceTest {
     void setUp() throws Exception {
         userService = new UserService();
         user = userService.create("Alice", 30, Gender.FEMALE);
-        transactionService = new TransactionService(userService);
+
+        factory = mock(FinanceAbstractFactory.class);
+        transactionService = new TransactionService(userService, factory);
         transactionService.setCurrentUser(user);
 
-        accountService = new AccountService(transactionService);
+        accountService = new AccountService(transactionService, factory);
         accountService.setCurrentUser(user);
-        AccountInterface acc = accountService.create(AccounType.BANK, "Main", 1000.0);
-        transactionService.create(TransactionType.INCOME, 200, "Category","Bonus", new Date(), acc, null);
+
+        AccountInterface acc = new Account("Main", 1000.0, AccounType.BANK);
+
+        when(factory.createAccount(AccounType.BANK, eq("Main"), eq(1000.0)))
+                .thenReturn(acc);
+
+        accountService.create(AccounType.BANK, "Main", 1000.0);
+
+        when(factory.createIncome(anyDouble(), anyString(), anyString(), any(Date.class), eq(acc)))
+                .thenReturn(new IncomeTransaction(200, "Category", "Bonus", new Date(), acc));
+
+        transactionService.create(TransactionType.INCOME, 200, "Category", "Bonus", new Date(), acc, null);
     }
 
     @Test
@@ -67,6 +86,7 @@ class UserServiceTest {
         assertEquals("Bonus", retrieved.getReason());
         assertEquals(TransactionType.INCOME, retrieved.getType());
     }
+
     @Test
     void testAddCategoryShouldIgnoreDuplicates() throws Exception {
         userService.addCategory("Custom");

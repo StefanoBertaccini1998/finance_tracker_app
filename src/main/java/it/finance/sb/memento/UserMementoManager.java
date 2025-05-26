@@ -19,9 +19,10 @@ import java.util.logging.Logger;
  * The type User memento manager.
  */
 public class UserMementoManager {
+    public static final String JSON = ".json";
     private static final String SAVE_DIR = "saved_users";
     private static final ObjectMapper mapper;
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(UserMementoManager.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(UserMementoManager.class);
 
     static {
         mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
@@ -33,6 +34,10 @@ public class UserMementoManager {
         }
     }
 
+    private UserMementoManager() {
+        throw new IllegalStateException("Memento Manager class");
+    }
+
     /**
      * Save.
      *
@@ -41,11 +46,12 @@ public class UserMementoManager {
      */
     public static void save(UserSnapshot snapshot) throws IOException {
         Objects.requireNonNull(snapshot, "UserSnapshot cannot be null.");
-        String filename = sanitizeFileName(snapshot.name()) + ".json";
+        String filename = sanitizeFileName(snapshot.name()) + JSON;
         Path filePath = Path.of(SAVE_DIR, filename);
         mapper.writeValue(filePath.toFile(), snapshot);
-        logger.info("[UserMementoManager] Saved snapshot: " + filePath);
+        logger.info(()->"[UserMementoManager] Saved snapshot: " + filePath);
     }
+
 
     /**
      * Load optional.
@@ -55,14 +61,14 @@ public class UserMementoManager {
      * @throws IOException the io exception
      */
     public static Optional<UserSnapshot> load(String username) throws IOException {
-        String filename = sanitizeFileName(username) + ".json";
+        String filename = sanitizeFileName(username) + JSON;
         Path filePath = Path.of(SAVE_DIR, filename);
         File file = filePath.toFile();
         if (!file.exists()) {
-            logger.warning("[UserMementoManager] File not found: " + filePath);
+            logger.warning(()->"[UserMementoManager] File not found: " + filePath);
             return Optional.empty();
         }
-        logger.info("[UserMementoManager] Loading snapshot: " + filePath);
+        logger.info(()->"[UserMementoManager] Loading snapshot: " + filePath);
         return Optional.of(mapper.readValue(file, UserSnapshot.class));
     }
 
@@ -73,11 +79,11 @@ public class UserMementoManager {
      */
     public static List<String> listSavedUsers() {
         File dir = new File(SAVE_DIR);
-        String[] files = dir.list((d, name) -> name.endsWith(".json"));
+        String[] files = dir.list((d, name) -> name.endsWith(JSON));
         if (files == null) return List.of();
 
         return Arrays.stream(files)
-                .map(name -> name.replace(".json", ""))
+                .map(name -> name.replace(JSON, ""))
                 .sorted()
                 .toList();
     }
@@ -89,13 +95,13 @@ public class UserMementoManager {
      * @return the boolean
      */
     public static boolean delete(String username) {
-        String filename = sanitizeFileName(username) + ".json";
+        String filename = sanitizeFileName(username) + JSON;
         File file = new File(SAVE_DIR, filename);
-        boolean deleted = file.exists() && file.delete();
+        boolean deleted = !(!file.exists() || !file.delete());
         if (deleted) {
-            logger.info("[UserMementoManager] Deleted snapshot: " + filename);
+            logger.info(()->"[UserMementoManager] Deleted snapshot: " + filename);
         } else {
-            logger.warning("[UserMementoManager] Failed to delete or not found: " + filename);
+            logger.warning(()->"[UserMementoManager] Failed to delete or not found: " + filename);
         }
         return deleted;
     }

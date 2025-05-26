@@ -17,8 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for TransactionList and ConcreteTransactionIterator.
  */
-public class TransactionListTest {
-
+class TransactionListTest {
     private AbstractTransaction tx1;
     private AbstractTransaction tx2;
     private AbstractTransaction tx3;

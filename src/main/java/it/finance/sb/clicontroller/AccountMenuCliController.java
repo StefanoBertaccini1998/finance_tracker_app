@@ -1,4 +1,4 @@
-package it.finance.sb.cliController;
+package it.finance.sb.clicontroller;
 
 import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.exception.DataValidationException;
@@ -17,6 +17,7 @@ import it.finance.sb.utility.ConsoleUtils;
  */
 public class AccountMenuCliController implements MenuCliController {
 
+    public static final String OPERATION_CANCELLED = " Operation cancelled.";
     private final AccountService accountService;
 
     /**
@@ -68,7 +69,7 @@ public class AccountMenuCliController implements MenuCliController {
         } catch (AccountOperationException | UserLoginException e) {
             System.out.println(ConsoleStyle.error(" " + e.getMessage()));
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
         }
     }
 
@@ -86,7 +87,7 @@ public class AccountMenuCliController implements MenuCliController {
             System.out.println(ConsoleStyle.success(" Account updated."));
 
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
         } catch (AccountOperationException | UserLoginException | DataValidationException e) {
             System.out.println(ConsoleStyle.error(" Could not update account: " + e.getMessage()));
         }
@@ -102,7 +103,7 @@ public class AccountMenuCliController implements MenuCliController {
             System.out.println(ConsoleStyle.success(" Account deleted."));
 
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
         } catch (AccountOperationException | UserLoginException e) {
             System.out.println(ConsoleStyle.error(" " + e.getMessage()));
         }
@@ -148,8 +149,7 @@ public class AccountMenuCliController implements MenuCliController {
      * @param actions corresponding actions
      */
     private void menuLoop(String title, String[] options, Runnable... actions) throws UserCancelledException {
-        boolean running = true;
-        while (running) {
+        while (true) {
             int choice = ConsoleUtils.showMenu(title, false, options);
             if (choice == -1 || choice > actions.length || actions[choice - 1] == null) return;
 

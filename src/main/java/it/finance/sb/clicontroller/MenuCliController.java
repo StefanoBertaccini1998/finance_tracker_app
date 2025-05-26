@@ -1,4 +1,4 @@
-package it.finance.sb.cliController;
+package it.finance.sb.clicontroller;
 
 import it.finance.sb.exception.UserCancelledException;
 

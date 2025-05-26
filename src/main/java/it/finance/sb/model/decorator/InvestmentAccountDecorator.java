@@ -53,11 +53,14 @@ public class InvestmentAccountDecorator implements AccountInterface {
         double finalAmount = projection[projectionYears];
         double totalInterest = finalAmount - initialAmount;
 
-        return String.format(
-                "Investment Summary for %s (Rate: %.2f%%)\n" +
-                        "Initial balance: $%.2f\n" +
-                        "Projected balance after %d years: $%.2f\n" +
-                        "Total interest earned: $%.2f",
+        return String.format("""
+                        Investment Summary for %s (Rate: %.2f%%)
+                        "
+                        "Initial balance: $%.2f
+                        "
+                        "Projected balance after %d years: $%.2f
+                        "
+                        "Total interest earned: $%.2f""",
                 getName(),
                 interestRate * 100,
                 initialAmount,
@@ -98,7 +101,7 @@ public class InvestmentAccountDecorator implements AccountInterface {
 
     @Override
     public void setType(AccounType type) {
-
+        //Not implemented
     }
 
     @Override

@@ -11,6 +11,10 @@ public class ConsoleStyle {
     public static final String CYAN = "\u001B[36m";
     public static final String WHITE = "\u001B[37m";
 
+    private ConsoleStyle() {
+        throw new IllegalStateException("Utility class");
+    }
+
     // ℹ️ Info messages
     public static String info(String msg) {
         return CYAN + "\nℹ️  " + msg + RESET;

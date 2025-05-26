@@ -13,9 +13,10 @@ import it.finance.sb.utility.InputSanitizer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
  */
 public class FileIOService extends BaseService {
 
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(FileIOService.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(FileIOService.class);
 
     private final TransactionService transactionService;
     private final UserService userService;
@@ -52,7 +53,7 @@ public class FileIOService extends BaseService {
      * @return list of successfully imported transactions
      */
     public List<AbstractTransaction> importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
-            throws UserLoginException, DataValidationException, IOException {
+            throws UserLoginException, DataValidationException, IOException, FileIOException {
 
         requireLoggedInUser();
 
@@ -73,16 +74,14 @@ public class FileIOService extends BaseService {
             }
 
             if (!errorLog.isEmpty()) {
-                logger.warning("[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
+                logger.warning(()->"[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
             }
-            logger.info("[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
+            logger.info(()->"[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
             return imported;
         } catch (DataValidationException | IOException e) {
-            logger.log(Level.SEVERE, "[FileIOService] Failed to import: " + e.getMessage(), e);
-            throw e;
+            throw new FileIOException("[FileIOService] Failed to import cause: "+e.getMessage(),e);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[FileIOService] Unexpected import failure: " + e.getMessage(), e);
-            throw new IOException("Unexpected error during import", e);
+            throw new FileIOException("Unexpected error during import", e);
         }
     }
 
@@ -95,9 +94,8 @@ public class FileIOService extends BaseService {
         try {
             List<AbstractTransaction> allTxs = transactionService.getAllTransactionsFlattened();
             transactionWriter.exportToFile(allTxs, outputPath);
-            logger.info("[FileIOService] Exported " + allTxs.size() + " transactions to: " + outputPath);
+            logger.info(()->"[FileIOService] Exported " + allTxs.size() + " transactions to: " + outputPath);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "[FileIOService] Export failed: " + e.getMessage(), e);
             throw new FileIOException("Failed to export transactions.", e);
         }
     }
@@ -117,7 +115,7 @@ public class FileIOService extends BaseService {
         String category = tx.getCategory();
         if (category != null && !category.isBlank() && !getCurrentUser().isCategoryAllowed(category)) {
             userService.addCategory(category);
-            logger.info("[FileIOService] Added new category during import: " + category);
+            logger.info(()->"[FileIOService] Added new category during import: " + category);
         }
     }
 

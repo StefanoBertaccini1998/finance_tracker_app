@@ -2,6 +2,8 @@ package it.finance.sb.io;
 
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.factory.AccountFactory;
+import it.finance.sb.factory.DefaultFinanceFactory;
+import it.finance.sb.factory.FinanceAbstractFactory;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
@@ -19,11 +21,12 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class CsvImporterTest  {
+class CsvImporterTest  {
     CsvImporter csvTransactionImporter;
     @BeforeEach
     void setUp(){
-        csvTransactionImporter = new CsvImporter();
+        FinanceAbstractFactory factory = new DefaultFinanceFactory();
+        csvTransactionImporter = new CsvImporter(factory);
     }
 
     @Test

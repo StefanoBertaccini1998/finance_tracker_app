@@ -1,5 +1,6 @@
 package it.finance.sb.io;
 
+import it.finance.sb.exception.FileIOException;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.IncomeTransaction;
@@ -32,7 +33,7 @@ class CsvWriterTest {
     }
 
     @Test
-    void exportToFile_writesValidCsv() throws IOException {
+    void exportToFile_writesValidCsv() throws FileIOException, IOException {
         AccountInterface acc = new it.finance.sb.model.account.Account("Main", 1000.0, AccounType.BANK);
         AbstractTransaction tx = new IncomeTransaction(100.0, "Salary", "Monthly", new Date(0), acc);
 
@@ -47,7 +48,7 @@ class CsvWriterTest {
     }
 
     @Test
-    void exportToFile_emptyList_writesHeaderOnly() throws IOException {
+    void exportToFile_emptyList_writesHeaderOnly() throws IOException, FileIOException {
         csvWriter.exportToFile(List.of(), tempFile);
 
         List<String> lines = Files.readAllLines(tempFile);
@@ -60,16 +61,16 @@ class CsvWriterTest {
         AccountInterface acc = new it.finance.sb.model.account.Account("Main", 1000.0, AccounType.BANK);
         AbstractTransaction tx = new IncomeTransaction(100.0, "Salary", "Monthly", new Date(), acc);
 
-        assertThrows(IllegalArgumentException.class, () -> csvWriter.exportToFile(List.of(tx), null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> csvWriter.exportToFile(List.of(tx), null));
     }
 
     @Test
     void exportToFile_nullList_throwsException() {
-        assertThrows(IllegalArgumentException.class, () -> csvWriter.exportToFile(null, tempFile));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> csvWriter.exportToFile(null, tempFile));
     }
 
     @Test
-    void exportToFile_multipleTransactions_shouldWriteAll() throws IOException {
+    void exportToFile_multipleTransactions_shouldWriteAll() throws IOException, FileIOException {
         AccountInterface acc = new it.finance.sb.model.account.Account("Main", 1000.0, AccounType.BANK);
         AbstractTransaction tx1 = new IncomeTransaction(100.0, "Salary", "Jan", new Date(0), acc);
         AbstractTransaction tx2 = new IncomeTransaction(200.0, "Bonus", "Feb", new Date(0), acc);

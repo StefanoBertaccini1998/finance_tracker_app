@@ -1,9 +1,12 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.FileIOException;
+import it.finance.sb.factory.DefaultFinanceFactory;
+import it.finance.sb.factory.FinanceAbstractFactory;
 import it.finance.sb.io.CsvImporter;
 import it.finance.sb.io.ImporterI;
 import it.finance.sb.io.CsvWriter;
+import it.finance.sb.io.WriterI;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
@@ -22,12 +25,12 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class FileIOServiceTest {
+class FileIOServiceTest {
 
     private TransactionService transactionService;
     private UserService userService;
     private ImporterI<AbstractTransaction> mockImporter;
-    private CsvWriter<AbstractTransaction> mockWriter;
+    private WriterI<AbstractTransaction> mockWriter;
     private FileIOService fileIOService;
 
     private User user;
@@ -37,7 +40,8 @@ public class FileIOServiceTest {
     void setUp() {
         user = new User("TestUser", 30, Gender.OTHER);
         userService = new UserService();
-        transactionService = new TransactionService(userService);
+        FinanceAbstractFactory factory = new DefaultFinanceFactory();
+        transactionService = new TransactionService(userService,factory);
         mockImporter = Mockito.mock(CsvImporter.class);
         mockWriter = Mockito.mock(CsvWriter.class);
 

@@ -13,6 +13,10 @@ public class TransactionPrinter {
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
+    private TransactionPrinter() {
+        throw new IllegalStateException("Utility class");
+    }
+
     /**
      * Displays a sorted, formatted list of transactions.
      *

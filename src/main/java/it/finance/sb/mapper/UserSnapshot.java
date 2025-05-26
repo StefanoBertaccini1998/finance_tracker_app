@@ -35,35 +35,5 @@ public record UserSnapshot(
         this.accounts = accounts;
         this.transactions = transactions;
     }
-
-    @Override
-    public String name() {
-        return name;
-    }
-
-    @Override
-    public int age() {
-        return age;
-    }
-
-    @Override
-    public Gender gender() {
-        return gender;
-    }
-
-    @Override
-    public List<String> categories() {
-        return categories;
-    }
-
-    @Override
-    public List<AccountInterface> accounts() {
-        return accounts;
-    }
-
-    @Override
-    public Map<TransactionType, List<AbstractTransaction>> transactions() {
-        return transactions;
-    }
 }
 

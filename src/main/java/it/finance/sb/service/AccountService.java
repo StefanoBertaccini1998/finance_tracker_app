@@ -3,7 +3,7 @@ package it.finance.sb.service;
 import it.finance.sb.exception.AccountOperationException;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.UserLoginException;
-import it.finance.sb.factory.AccountFactory;
+import it.finance.sb.factory.FinanceAbstractFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
@@ -11,7 +11,6 @@ import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.InputSanitizer;
 
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -21,10 +20,12 @@ import java.util.logging.Logger;
 public class AccountService extends BaseService {
 
     private final TransactionService transactionService;
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(AccountService.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(AccountService.class);
+    private final FinanceAbstractFactory factory;
 
-    public AccountService(TransactionService transactionService) {
+    public AccountService(TransactionService transactionService, FinanceAbstractFactory factory) {
         this.transactionService = transactionService;
+        this.factory = factory;
     }
 
     /**
@@ -40,8 +41,7 @@ public class AccountService extends BaseService {
         }
 
         try {
-            AccountInterface account = AccountFactory.createAccount(type, name, balance);
-            InputSanitizer.validate(account);
+            AccountInterface account = factory.createAccount(type, name, balance);
             currentUser.addAccount(account);
 
             logger.info(() -> String.format("[AccountService] Account created for user='%s' (type=%s)",
@@ -49,7 +49,6 @@ public class AccountService extends BaseService {
             return account;
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error during account creation", e);
             throw new AccountOperationException("Account creation failed.", e);
         }
     }
@@ -74,7 +73,6 @@ public class AccountService extends BaseService {
             return account;
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error deleting account", e);
             throw new AccountOperationException("Failed to delete account.", e);
         }
     }
@@ -111,7 +109,6 @@ public class AccountService extends BaseService {
             return account;
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error modifying account", e);
             throw new AccountOperationException("Failed to modify account.", e);
         }
     }

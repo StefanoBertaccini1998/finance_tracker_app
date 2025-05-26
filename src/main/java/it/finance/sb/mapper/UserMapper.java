@@ -5,7 +5,7 @@ import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.User;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +14,10 @@ import java.util.Map;
  */
 public class UserMapper {
 
+    private UserMapper() {
+        throw new IllegalStateException("Mapper class");
+    }
+
     /**
      * To snapshot user snapshot.
      *
@@ -21,7 +25,7 @@ public class UserMapper {
      * @return the user snapshot
      */
     public static UserSnapshot toSnapshot(User user) {
-        Map<TransactionType, List<AbstractTransaction>> flattened = new HashMap<>();
+        Map<TransactionType, List<AbstractTransaction>> flattened = new EnumMap<>(TransactionType.class);
         for (Map.Entry<TransactionType, TransactionList> entry : user.getTransactionLists().entrySet()) {
             flattened.put(entry.getKey(), entry.getValue().getFlattenedTransactions());
         }

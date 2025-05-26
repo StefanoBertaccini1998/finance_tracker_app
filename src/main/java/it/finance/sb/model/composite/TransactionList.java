@@ -13,42 +13,42 @@ import java.util.function.Consumer;
  * Implements Composite pattern.
  */
 public class TransactionList implements CompositeTransaction {
-    private final List<CompositeTransaction> transactionList;
+    private final List<CompositeTransaction> compositeList;
 
     public TransactionList() {
-        this.transactionList = new ArrayList<>();
+        this.compositeList = new ArrayList<>();
     }
 
     @Override
     public void displayTransaction() {
-        transactionList.forEach(CompositeTransaction::displayTransaction);
+        compositeList.forEach(CompositeTransaction::displayTransaction);
     }
 
     @Override
     public double getTotal() {
-        return transactionList.stream()
+        return compositeList.stream()
                 .mapToDouble(CompositeTransaction::getTotal)
                 .sum();
     }
 
     public void addTransaction(CompositeTransaction transaction) {
-        transactionList.add(transaction);
+        compositeList.add(transaction);
     }
 
     public void addTransactions(List<? extends CompositeTransaction> transactions) {
-        transactionList.addAll(transactions);
+        compositeList.addAll(transactions);
     }
 
     public void remove(CompositeTransaction transaction) {
-        transactionList.remove(transaction);
+        compositeList.remove(transaction);
     }
 
     public ConcreteTransactionIterator iterator() {
-        return new ConcreteTransactionIterator(transactionList);
+        return new ConcreteTransactionIterator(compositeList);
     }
 
     public List<CompositeTransaction> getInternalList() {
-        return transactionList;
+        return compositeList;
     }
 
     public List<AbstractTransaction> getFlattenedTransactions() {
@@ -61,12 +61,12 @@ public class TransactionList implements CompositeTransaction {
     }
 
     public boolean modifyTransactionById(int id, Consumer<AbstractTransaction> modifier) {
-        for (CompositeTransaction ct : transactionList) {
+        for (CompositeTransaction ct : compositeList) {
             if (ct instanceof AbstractTransaction tx && tx.getTransactionId() == id) {
                 modifier.accept(tx);
                 return true;
-            } else if (ct instanceof TransactionList nested) {
-                if (nested.modifyTransactionById(id, modifier)) return true;
+            } else if (ct instanceof TransactionList nested && nested.modifyTransactionById(id, modifier)) {
+                return true;
             }
         }
         return false;

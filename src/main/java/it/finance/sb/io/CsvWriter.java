@@ -1,5 +1,6 @@
 package it.finance.sb.io;
 
+import it.finance.sb.exception.FileIOException;
 import it.finance.sb.logging.LoggerFactory;
 
 import java.io.BufferedWriter;
@@ -16,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class CsvWriter<T extends CsvSerializable> implements WriterI<T> {
 
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(CsvWriter.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(CsvWriter.class);
     private final String header;
 
     /**
@@ -30,12 +31,12 @@ public class CsvWriter<T extends CsvSerializable> implements WriterI<T> {
 
 
     @Override
-    public void exportToFile(List<T> items, Path path) throws IOException {
+    public void exportToFile(List<T> items, Path path) throws FileIOException {
         if (items == null || path == null) {
             logger.severe("Export failed: null list or path.");
             throw new IllegalArgumentException("CsvWriter: items or path cannot be null.");
         }
-        logger.info("Exporting to file: " + path.toAbsolutePath() + " - Total items: " + items.size());
+        logger.info(()->"Exporting to file: " + path.toAbsolutePath() + " - Total items: " + items.size());
 
         try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             if (!header.isEmpty()) {
@@ -48,9 +49,8 @@ public class CsvWriter<T extends CsvSerializable> implements WriterI<T> {
                 writer.newLine();
             }
         }catch (IOException e){
-            logger.severe("Write failure: " + e.getMessage());
-            throw e;
+            throw new FileIOException("Write failure: "+e.getMessage(),e);
         }
-        logger.info("Export completed successfully to: " + path.toAbsolutePath());
+        logger.info(()->"Export completed successfully to: " + path.toAbsolutePath());
     }
 }

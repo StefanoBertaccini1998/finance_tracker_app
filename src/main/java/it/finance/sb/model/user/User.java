@@ -114,7 +114,6 @@ public class User {
      */
     public  Map<TransactionType, TransactionList> getTransactionLists() {
         return Collections.unmodifiableMap(transactionLists);
-        //return transactionLists;
     }
 
     /**
@@ -124,7 +123,6 @@ public class User {
      */
     public List<AccountInterface> getAccountList() {
         return Collections.unmodifiableList(accountList);
-        //return accountList;
     }
 
     /**

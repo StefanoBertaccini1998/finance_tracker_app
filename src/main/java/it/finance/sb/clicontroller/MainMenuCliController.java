@@ -1,4 +1,4 @@
-package it.finance.sb.cliController;
+package it.finance.sb.clicontroller;
 
 import it.finance.sb.exception.UserCancelledException;
 import it.finance.sb.model.user.User;
@@ -20,6 +20,7 @@ import java.util.logging.Logger;
  */
 public class MainMenuCliController {
 
+    public static final String RETURNING_TO_MAIN_MENU = " Returning to main menu.";
     private final Logger logger;
     private final UserMenuCliController userMenuCliController;
     private final AccountMenuCliController accountMenuCliController;
@@ -80,7 +81,7 @@ public class MainMenuCliController {
      * Displays the main application menu.
      */
     private void showMainMenu() throws UserCancelledException {
-        menuLoop("Main Menu",
+        menuLoop(
                 new String[]{
                         "Manage Accounts",
                         "Manage Transactions",
@@ -103,7 +104,7 @@ public class MainMenuCliController {
         try {
             accountMenuCliController.show();
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Returning to main menu."));
+            System.out.println(ConsoleStyle.back(RETURNING_TO_MAIN_MENU));
         }
     }
 
@@ -114,7 +115,7 @@ public class MainMenuCliController {
         try {
             transactionMenuCliController.show();
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Returning to main menu."));
+            System.out.println(ConsoleStyle.back(RETURNING_TO_MAIN_MENU));
         }
     }
 
@@ -125,7 +126,7 @@ public class MainMenuCliController {
         try {
             csvMenuCliController.show();
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Returning to main menu."));
+            System.out.println(ConsoleStyle.back(RETURNING_TO_MAIN_MENU));
         }
     }
 
@@ -145,14 +146,12 @@ public class MainMenuCliController {
     /**
      * Generic method for displaying a menu and executing related actions.
      *
-     * @param title   menu title
      * @param options menu options
      * @param actions corresponding action handlers
      */
-    private void menuLoop(String title, String[] options, Runnable... actions) throws UserCancelledException {
-        boolean running = true;
-        while (running) {
-            int choice = ConsoleUtils.showMenu(title, false, options);
+    private void menuLoop(String[] options, Runnable... actions) throws UserCancelledException {
+        while (true) {
+            int choice = ConsoleUtils.showMenu("Main Menu", false, options);
             if (choice == -1 || choice > actions.length || actions[choice - 1] == null) return;
             actions[choice - 1].run();
         }

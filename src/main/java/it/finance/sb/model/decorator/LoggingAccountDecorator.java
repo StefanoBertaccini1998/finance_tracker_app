@@ -38,7 +38,7 @@ public class LoggingAccountDecorator implements AccountInterface {
 
     @Override
     public void setType(AccounType type) {
-
+        //Not implemented
     }
 
     @Override

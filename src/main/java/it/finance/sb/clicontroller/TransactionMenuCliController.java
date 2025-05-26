@@ -1,4 +1,4 @@
-package it.finance.sb.cliController;
+package it.finance.sb.clicontroller;
 
 import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.exception.UserCancelledException;
@@ -138,7 +138,8 @@ public class TransactionMenuCliController implements MenuCliController {
      * @throws UserCancelledException if the user cancels the operation
      */
     private AccountInterface[] getTransactionAccounts(TransactionType type) throws UserCancelledException {
-        AccountInterface from = null, to = null;
+        AccountInterface from = null;
+        AccountInterface to = null;
         switch (type) {
             case INCOME -> to = selectFromList(user.getAccountList(), "destination account");
             case EXPENSE -> from = selectFromList(user.getAccountList(), "source account");

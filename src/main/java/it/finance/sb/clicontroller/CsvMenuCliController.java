@@ -1,4 +1,4 @@
-package it.finance.sb.cliController;
+package it.finance.sb.clicontroller;
 
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.FileIOException;
@@ -80,6 +80,9 @@ public class CsvMenuCliController implements MenuCliController {
             System.out.println(ConsoleStyle.error(" User must be logged in."));
         } catch (UserCancelledException e) {
             System.out.println(ConsoleStyle.back(" Operation cancelled."));
+        } catch (FileIOException e) {
+            logger.log(Level.SEVERE, "Import failed, error during file parsing", e);
+            System.out.println(ConsoleStyle.error(" Error during file parsing"));
         }
     }
 

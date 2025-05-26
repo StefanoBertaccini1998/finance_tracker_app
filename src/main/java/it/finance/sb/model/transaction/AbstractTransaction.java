@@ -74,7 +74,7 @@ public abstract class AbstractTransaction implements CompositeTransaction, CsvSe
         this.transactionId = ++idCounter;
     }
 
-    public AbstractTransaction() {
+    protected AbstractTransaction() {
         this.transactionId = ++idCounter;
     }
 

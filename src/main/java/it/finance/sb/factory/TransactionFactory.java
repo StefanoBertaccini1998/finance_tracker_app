@@ -18,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class TransactionFactory implements TransactionAbstractFactory{
 
-    private static final Logger logger = LoggerFactory.getInstance().getLogger(TransactionFactory.class);
+    private static final Logger logger = LoggerFactory.getSafeLogger(TransactionFactory.class);
 
     /**
      * Registry of creators mapped by transaction type.
@@ -45,7 +45,7 @@ public class TransactionFactory implements TransactionAbstractFactory{
      * @return A validated AbstractTransaction instance
      * @throws TransactionOperationException if the type is unsupported
      */
-    public static AbstractTransaction createTransaction(
+    private static AbstractTransaction createTransaction(
             TransactionType type,
             double amount,
             String category,
@@ -57,13 +57,13 @@ public class TransactionFactory implements TransactionAbstractFactory{
 
         TransactionCreator creator = creators.get(type);
         if (creator == null) {
-            logger.severe("Unsupported transaction type: " + type);
+            logger.severe(()->"Unsupported transaction type: " + type);
             throw new TransactionOperationException("Unsupported transaction type: " + type);
         }
 
         AbstractTransaction transaction = creator.create(amount, category, reason, date, to, from);
 
-        logger.info("Transaction created and validated: Type=" + type + ", Amount=" + amount);
+        logger.info(()->"Transaction created and validated: Type=" + type + ", Amount=" + amount);
         return transaction;
     }
 
@@ -76,7 +76,7 @@ public class TransactionFactory implements TransactionAbstractFactory{
      */
     public static void registerCreator(TransactionType type, TransactionCreator creator) {
         creators.put(type, creator);
-        logger.info("Custom TransactionCreator registered for type: " + type);
+        logger.info(()->"Custom TransactionCreator registered for type: " + type);
     }
 
     /**
@@ -89,29 +89,17 @@ public class TransactionFactory implements TransactionAbstractFactory{
     }
 
     @Override
-    public AbstractTransaction createIncome(double amount, String category, String reason, Date date, AccountInterface to) {
-        try {
-            return createTransaction(TransactionType.INCOME, amount, category, reason, date, to, null);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create income transaction", e);
-        }
+    public AbstractTransaction createIncome(double amount, String category, String reason, Date date, AccountInterface to) throws TransactionOperationException {
+        return createTransaction(TransactionType.INCOME, amount, category, reason, date, to, null);
     }
 
     @Override
-    public AbstractTransaction createExpense(double amount, String category, String reason, Date date, AccountInterface from) {
-        try {
-            return createTransaction(TransactionType.EXPENSE, amount, category, reason, date, null, from);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create expense transaction", e);
-        }
+    public AbstractTransaction createExpense(double amount, String category, String reason, Date date, AccountInterface from) throws TransactionOperationException {
+        return createTransaction(TransactionType.EXPENSE, amount, category, reason, date, null, from);
     }
 
     @Override
-    public AbstractTransaction createMovement(double amount, String category, String reason, Date date, AccountInterface to, AccountInterface from) {
-        try {
-            return createTransaction(TransactionType.MOVEMENT, amount, category, reason, date, to, from);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create movement transaction", e);
-        }
+    public AbstractTransaction createMovement(double amount, String category, String reason, Date date, AccountInterface to, AccountInterface from) throws TransactionOperationException {
+        return createTransaction(TransactionType.MOVEMENT, amount, category, reason, date, to, from);
     }
 }

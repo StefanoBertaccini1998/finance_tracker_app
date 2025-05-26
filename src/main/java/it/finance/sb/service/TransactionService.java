@@ -3,16 +3,17 @@ package it.finance.sb.service;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.exception.UserLoginException;
-import it.finance.sb.factory.TransactionFactory;
+import it.finance.sb.factory.FinanceAbstractFactory;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.iterator.TransactionIterator;
 import it.finance.sb.model.transaction.*;
-import it.finance.sb.utility.InputSanitizer;
 
-import java.util.*;
-import java.util.logging.Level;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -22,11 +23,13 @@ import java.util.logging.Logger;
  */
 public class TransactionService extends BaseService {
 
-    private final Logger logger = LoggerFactory.getInstance().getLogger(TransactionService.class);
+    private final Logger logger = LoggerFactory.getSafeLogger(TransactionService.class);
     private final UserService userService;
+    private final FinanceAbstractFactory factory;
 
-    public TransactionService(UserService userService) {
+    public TransactionService(UserService userService, FinanceAbstractFactory factory) {
         this.userService = userService;
+        this.factory = factory;
     }
 
     /**
@@ -39,30 +42,32 @@ public class TransactionService extends BaseService {
         requireLoggedInUser();
 
         if (amount <= 0) {
-            logger.warning("Rejected transaction with non-positive amount: " + amount);
+            logger.warning(()->"Rejected transaction with non-positive amount: " + amount);
             throw new TransactionOperationException("Amount must be greater than 0.");
         }
         if (fromAccount != null && fromAccount.getBalance() < amount) {
             logger.warning("Insufficient funds in source account: " + fromAccount.getName());
             throw new TransactionOperationException("Insufficient funds.");
         }
-
+        //Check account reliability
         validateAccounts(type, toAccount, fromAccount);
+        //account are controlled before
         applyAccountUpdates(type, amount, toAccount, fromAccount);
 
         try {
-            AbstractTransaction transaction = TransactionFactory.createTransaction(
-                    type, amount, category, reason, date, toAccount, fromAccount);
+            AbstractTransaction transaction = switch (type) {
+                case INCOME -> factory.createIncome(amount, category, reason, date, toAccount);
+                case EXPENSE -> factory.createExpense(amount, category, reason, date, fromAccount);
+                case MOVEMENT -> factory.createMovement(amount, category, reason, date, toAccount, fromAccount);
+            };
 
-            InputSanitizer.validate(transaction);
             getCurrentUser().addTransaction(transaction);
             userService.addCategory(category);
 
             logger.info("Created transaction ID=" + transaction.getTransactionId() + " for user: " + getCurrentUser().getName());
             return transaction;
 
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Failed to create transaction: " + e.getMessage(), e);
+        } catch (DataValidationException e) {
             throw new TransactionOperationException("Failed to create transaction.", e);
         }
     }
@@ -88,8 +93,7 @@ public class TransactionService extends BaseService {
             logger.info("Deleted transaction ID=" + transaction.getTransactionId());
             return transaction;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error deleting transaction", e);
-            throw new TransactionOperationException("Failed to delete transaction.", e);
+            throw new TransactionOperationException("Unexpected failure while deleting transaction", e);
         }
     }
 
@@ -123,8 +127,7 @@ public class TransactionService extends BaseService {
             logger.info("Transaction modified: OldID=" + original.getTransactionId() +
                     ", NewID=" + updated.getTransactionId());
             return updated;
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Failed to modify transaction", e);
+        } catch (UserLoginException | DataValidationException e) {
             throw new TransactionOperationException("Failed to modify transaction.", e);
         }
     }

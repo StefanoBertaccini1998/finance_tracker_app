@@ -15,7 +15,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class MementoManagerTest {
+class MementoManagerTest {
 
     private static final String TEST_NAME = "TestUserMemento";
 
