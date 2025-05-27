@@ -54,4 +54,14 @@ public class ExpenseTransaction extends AbstractTransaction {
     public String toCsv() {
         return formatCsvLine(fromAccount.getName(), null, category, reason, date.getTime());
     }
+
+    @Override
+    public String toString() {
+        return String.format("Income: %.2f %s - %s (%s)",
+                amount,
+                fromAccount.getName(),
+                category,
+                date
+        );
+    }
 }

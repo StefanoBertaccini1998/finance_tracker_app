@@ -1,18 +1,22 @@
 package it.finance.sb.io;
 
-import it.finance.sb.exception.FileIOException;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
-import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.transaction.AbstractTransaction;
-import org.junit.jupiter.api.*;
+import it.finance.sb.model.transaction.IncomeTransaction;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CsvWriterTest {
 
@@ -33,7 +37,7 @@ class CsvWriterTest {
     }
 
     @Test
-    void exportToFile_writesValidCsv() throws FileIOException, IOException {
+    void exportToFile_writesValidCsv() throws IOException {
         AccountInterface acc = new it.finance.sb.model.account.Account("Main", 1000.0, AccounType.BANK);
         AbstractTransaction tx = new IncomeTransaction(100.0, "Salary", "Monthly", new Date(0), acc);
 
@@ -48,7 +52,7 @@ class CsvWriterTest {
     }
 
     @Test
-    void exportToFile_emptyList_writesHeaderOnly() throws IOException, FileIOException {
+    void exportToFile_emptyList_writesHeaderOnly() throws IOException {
         csvWriter.exportToFile(List.of(), tempFile);
 
         List<String> lines = Files.readAllLines(tempFile);
@@ -70,7 +74,7 @@ class CsvWriterTest {
     }
 
     @Test
-    void exportToFile_multipleTransactions_shouldWriteAll() throws IOException, FileIOException {
+    void exportToFile_multipleTransactions_shouldWriteAll() throws IOException {
         AccountInterface acc = new it.finance.sb.model.account.Account("Main", 1000.0, AccounType.BANK);
         AbstractTransaction tx1 = new IncomeTransaction(100.0, "Salary", "Jan", new Date(0), acc);
         AbstractTransaction tx2 = new IncomeTransaction(200.0, "Bonus", "Feb", new Date(0), acc);

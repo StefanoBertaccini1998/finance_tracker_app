@@ -47,13 +47,13 @@ public class FileIOService extends BaseService {
      * Imports validated transactions from a CSV and updates user context.
      * Supports error recovery and dynamic account creation.
      *
-     * @param filePath path to CSV file
+     * @param filePath           path to CSV file
      * @param autoCreateAccounts allow creation of missing accounts
-     * @param skipErrors continue on bad lines
+     * @param skipErrors         continue on bad lines
      * @return list of successfully imported transactions
      */
     public List<AbstractTransaction> importTransactions(Path filePath, boolean autoCreateAccounts, boolean skipErrors)
-            throws UserLoginException, DataValidationException, IOException, FileIOException {
+            throws UserLoginException, DataValidationException, IOException {
 
         requireLoggedInUser();
 
@@ -74,14 +74,16 @@ public class FileIOService extends BaseService {
             }
 
             if (!errorLog.isEmpty()) {
-                logger.warning(()->"[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
+                logger.warning(() -> "[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
             }
-            logger.info(()->"[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
+
+            logger.info(() -> "[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
             return imported;
+
         } catch (DataValidationException | IOException e) {
-            throw new FileIOException("[FileIOService] Failed to import cause: "+e.getMessage(),e);
+            throw new FileIOException("Failed to import: " + e.getMessage(), e, errorLog);
         } catch (Exception e) {
-            throw new FileIOException("Unexpected error during import", e);
+            throw new FileIOException("Unexpected error during import", e, errorLog);
         }
     }
 
@@ -94,7 +96,7 @@ public class FileIOService extends BaseService {
         try {
             List<AbstractTransaction> allTxs = transactionService.getAllTransactionsFlattened();
             transactionWriter.exportToFile(allTxs, outputPath);
-            logger.info(()->"[FileIOService] Exported " + allTxs.size() + " transactions to: " + outputPath);
+            logger.info(() -> "[FileIOService] Exported " + allTxs.size() + " transactions to: " + outputPath);
         } catch (Exception e) {
             throw new FileIOException("Failed to export transactions.", e);
         }
@@ -115,7 +117,7 @@ public class FileIOService extends BaseService {
         String category = tx.getCategory();
         if (category != null && !category.isBlank() && !getCurrentUser().isCategoryAllowed(category)) {
             userService.addCategory(category);
-            logger.info(()->"[FileIOService] Added new category during import: " + category);
+            logger.info(() -> "[FileIOService] Added new category during import: " + category);
         }
     }
 

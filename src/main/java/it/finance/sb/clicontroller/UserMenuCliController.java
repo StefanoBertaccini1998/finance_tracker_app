@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 public class UserMenuCliController implements MenuCliController {
 
     public static final String OPERATION_CANCELLED = " Operation cancelled.";
+    public static final String OPERATION_CANCELLED_BY_USER = "Operation cancelled by user.";
     private final UserService userService;
     private final MementoService mementoService;
     private final Logger logger;
@@ -53,13 +54,26 @@ public class UserMenuCliController implements MenuCliController {
     public void show() throws UserCancelledException {
         System.out.println(ConsoleStyle.section("🔐 Load or Create User"));
 
-        menuLoop("User Login",
-                new String[]{"Load existing user", "Create new user"},
-                this::loadUser,
-                this::createNewUser
-        );
+        while (currentUser == null) {
+            int choice = ConsoleUtils.showMenu(
+                    "User Login",
+                    false,
+                    "Load existing user",
+                    "Create new user"
+            );
 
-        // once loaded/created, propagate to services
+            if (choice == -1) {
+                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
+                throw new UserCancelledException(); // exit entire flow if user cancels
+            }
+
+            switch (choice) {
+                case 1 -> loadUser();
+                case 2 -> createNewUser();
+                default -> System.out.println(ConsoleStyle.warning(" Invalid option selected."));
+            }
+        }
+
         userService.setCurrentUser(currentUser);
     }
 
@@ -74,38 +88,40 @@ public class UserMenuCliController implements MenuCliController {
 
     /**
      * Loads a user from saved snapshots.
-     *
      */
     private void loadUser() {
         try {
             List<String> savedUsers = mementoService.listUsers();
 
             if (savedUsers.isEmpty()) {
-                System.out.println(ConsoleStyle.warning(" No saved users found."));
+                System.out.println(ConsoleStyle.warning("No saved users found. Let's create a new one."));
                 createNewUser();
                 return;
             }
 
             int selected = ConsoleUtils.showMenu("Select a saved user", savedUsers.toArray(new String[0]));
             if (selected == -1) {
-                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
+                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
                 return;
             }
 
             Optional<User> loaded = mementoService.loadUser(savedUsers.get(selected - 1));
             if (loaded.isPresent()) {
                 currentUser = loaded.get();
-                System.out.println(ConsoleStyle.success(" Loaded user: " + currentUser.getName()));
+                System.out.println(ConsoleStyle.success("User loaded: " + currentUser.getName()));
             } else {
-                System.out.println(ConsoleStyle.error(" Could not load selected user. Creating a new one."));
+                System.out.println(ConsoleStyle.error("Could not load the selected user. A new one will be created."));
                 createNewUser();
             }
 
-        } catch (MementoException e) {
-            logger.log(Level.SEVERE, "Failed to load user", e);
-            System.out.println(ConsoleStyle.error(" Failed to load user."));
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
+        } catch (MementoException e) {
+            logger.log(Level.SEVERE, "Failed to load user snapshot", e);
+            System.out.println(ConsoleStyle.error("Failed to load user data. The file might be missing or corrupted."));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Unexpected error while loading user", e);
+            System.out.println(ConsoleStyle.error("An unexpected error occurred while loading user data."));
         }
     }
 
@@ -113,36 +129,38 @@ public class UserMenuCliController implements MenuCliController {
      * Creates a new user by prompting the user for input.
      */
     public void createNewUser() {
-        try {
-            String name = ConsoleUtils.prompt("Enter your name", false);
-            if (name == null) throw new UserCancelledException();
+        System.out.println(ConsoleStyle.menuTitle("Create New User"));
 
-            String ageStr = ConsoleUtils.prompt("Enter your age", false);
-            if (ageStr == null) throw new UserCancelledException();
-            int age = Integer.parseInt(ageStr);
+        while (true) {
+            try {
+                String name = ConsoleUtils.prompt("Enter your name", false);
 
-            Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
-            if (gender == null) throw new UserCancelledException();
+                String ageStr = ConsoleUtils.prompt("Enter your age", false);
+                int age = Integer.parseInt(ageStr);
 
-            currentUser = userService.create(name, age, gender);
-            mementoService.saveUser(currentUser);
+                Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
 
-            System.out.println(ConsoleStyle.success(" User created and saved!"));
+                currentUser = userService.create(name, age, gender);
+                mementoService.saveUser(currentUser);
 
-        } catch (DataValidationException e) {
-            logger.warning("User data invalid: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Invalid user data: " + e.getMessage()));
-            createNewUser();
-        } catch (NumberFormatException e) {
-            logger.warning("Invalid age: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Invalid age format."));
-            createNewUser();
-        } catch (MementoException e) {
-            logger.severe("Failed to save user: " + e.getMessage());
-            System.out.println(ConsoleStyle.error(" Could not save user."));
-            createNewUser();
-        } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
+                System.out.println(ConsoleStyle.success("User created and saved!"));
+                break;
+            } catch (UserCancelledException e) {
+                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
+                break;
+            } catch (NumberFormatException e) {
+                logger.warning("Invalid age input: " + e.getMessage());
+                System.out.println(ConsoleStyle.error("Please enter a valid number for age."));
+            } catch (DataValidationException e) {
+                logger.warning("Invalid user data: " + e.getMessage());
+                System.out.println(ConsoleStyle.error("Invalid input: " + e.getMessage()));
+            } catch (MementoException e) {
+                logger.severe("Failed to save user data: " + e.getMessage());
+                System.out.println(ConsoleStyle.error("Could not save user data. Check disk permissions or retry."));
+            } catch (Exception e) {
+                logger.severe("Unexpected error during user creation: " + e.getMessage());
+                System.out.println(ConsoleStyle.error("An unexpected error occurred. Please try again."));
+            }
         }
     }
 
@@ -159,25 +177,4 @@ public class UserMenuCliController implements MenuCliController {
         }
     }
 
-    /**
-     * Displays a generic menu and handles user selection.
-     *
-     * @param title   the menu title
-     * @param options the menu options
-     * @param actions the corresponding actions
-     * @throws UserCancelledException if user exits menu
-     */
-    private void menuLoop(String title, String[] options, Runnable... actions) throws UserCancelledException {
-        boolean running = true;
-        while (running) {
-            int choice = ConsoleUtils.showMenu(title, false, options);
-            if (choice == -1) return;
-            if (choice > actions.length || actions[choice - 1] == null) {
-                running = false;
-            } else {
-                actions[choice - 1].run();
-                running = false; // exit after one operation (login complete)
-            }
-        }
-    }
 }

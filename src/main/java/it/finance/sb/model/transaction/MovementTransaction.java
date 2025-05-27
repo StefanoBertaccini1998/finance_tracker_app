@@ -70,4 +70,14 @@ public class MovementTransaction extends AbstractTransaction {
         return formatCsvLine(fromAccount.getName(), toAccount.getName(), category, reason, date.getTime());
     }
 
+    @Override
+    public String toString() {
+        return String.format("Transfer: %.2f from %s to %s (%s)",
+                amount,
+                fromAccount.getName(),
+                toAccount.getName(),
+                date
+        );
+    }
+
 }

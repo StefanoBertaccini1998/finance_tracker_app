@@ -82,7 +82,6 @@ public class InvestmentService extends BaseService {
 
             if (choice.equals("1")) {
                 // First, show the user's accounts
-                accountService.displayAllAccount();
 
                 if (currentUser.getAccountList().isEmpty()) {
                     System.out.println("You need to create an account first!");

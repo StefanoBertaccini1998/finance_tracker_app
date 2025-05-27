@@ -6,9 +6,13 @@ import it.finance.sb.exception.UserCancelledException;
 import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
+import it.finance.sb.model.user.User;
 import it.finance.sb.service.AccountService;
+import it.finance.sb.utility.AccountPrinter;
 import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.ConsoleUtils;
+
+import java.util.List;
 
 /**
  * CLI controller responsible for managing account-related operations.
@@ -17,7 +21,9 @@ import it.finance.sb.utility.ConsoleUtils;
  */
 public class AccountMenuCliController implements MenuCliController {
 
-    public static final String OPERATION_CANCELLED = " Operation cancelled.";
+    public static final String OPERATION_CANCELLED = "Operation cancelled by user.";
+    public static final String SESSION_ERROR = "Session error: ";
+    public static final String UNEXPECTED_ERROR = "Unexpected error: ";
     private final AccountService accountService;
 
     /**
@@ -48,7 +54,8 @@ public class AccountMenuCliController implements MenuCliController {
      * Displays all current user's accounts.
      */
     private void displayAccounts() {
-        accountService.displayAllAccount();
+        List<AccountInterface> accounts = accountService.getAllAccount();
+        AccountPrinter.printAccounts(accounts);
     }
 
     /**
@@ -56,20 +63,25 @@ public class AccountMenuCliController implements MenuCliController {
      * Applies validation and prints success/error messages.
      */
     private void createAccount() {
+        System.out.println(ConsoleStyle.menuTitle("Create A New Account"));
         try {
             String name = ConsoleUtils.prompt("Account name", false);
             Double balance = ConsoleUtils.promptForDouble("Initial balance", false);
             AccounType type = ConsoleUtils.selectEnum(AccounType.class, "Account Type", false);
 
             AccountInterface acc = accountService.create(type, name, balance);
-            System.out.println(ConsoleStyle.success(" Created: " + acc));
+            System.out.println(ConsoleStyle.success("Created: " + acc));
 
-        } catch (DataValidationException e) {
-            System.out.println(ConsoleStyle.error(" Check account details: " + e.getMessage()));
-        } catch (AccountOperationException | UserLoginException e) {
-            System.out.println(ConsoleStyle.error(" " + e.getMessage()));
         } catch (UserCancelledException e) {
             System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
+        } catch (DataValidationException e) {
+            System.out.println(ConsoleStyle.error("Invalid account data: " + e.getMessage()));
+        } catch (AccountOperationException e) {
+            System.out.println(ConsoleStyle.error("Account creation error: " + e.getMessage()));
+        } catch (UserLoginException e) {
+            System.out.println(ConsoleStyle.error(SESSION_ERROR + e.getMessage()));
+        } catch (Exception e) {
+            System.out.println(ConsoleStyle.error(UNEXPECTED_ERROR + e.getMessage()));
         }
     }
 
@@ -77,19 +89,26 @@ public class AccountMenuCliController implements MenuCliController {
      * Updates an existing account selected by the user.
      */
     private void updateAccount() {
+        System.out.println(ConsoleStyle.menuTitle("Select an account to Update"));
         try {
             AccountInterface acc = selectAccount("to update");
-            String name = ConsoleUtils.prompt("New name (blank to skip)", true);
+            String name = ConsoleUtils.prompt("New name", true);
+            Double balance = ConsoleUtils.promptForDouble("New balance", true);
             AccounType type = ConsoleUtils.selectEnum(AccounType.class, "New Type", true);
-            Double balance = ConsoleUtils.promptForDouble("New balance (blank to skip)", true);
 
             accountService.modify(acc, type, name, balance);
-            System.out.println(ConsoleStyle.success(" Account updated."));
+            System.out.println(ConsoleStyle.success("Account updated."));
 
         } catch (UserCancelledException e) {
             System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
-        } catch (AccountOperationException | UserLoginException | DataValidationException e) {
-            System.out.println(ConsoleStyle.error(" Could not update account: " + e.getMessage()));
+        } catch (DataValidationException e) {
+            System.out.println(ConsoleStyle.error("Validation error: " + e.getMessage()));
+        } catch (AccountOperationException e) {
+            System.out.println(ConsoleStyle.error("Could not update account: " + e.getMessage()));
+        } catch (UserLoginException e) {
+            System.out.println(ConsoleStyle.error(SESSION_ERROR + e.getMessage()));
+        } catch (Exception e) {
+            System.out.println(ConsoleStyle.error(UNEXPECTED_ERROR + e.getMessage()));
         }
     }
 
@@ -97,15 +116,20 @@ public class AccountMenuCliController implements MenuCliController {
      * Deletes an existing account selected by the user.
      */
     private void deleteAccount() {
+        System.out.println(ConsoleStyle.menuTitle("Select an account to Update Delete"));
         try {
             AccountInterface acc = selectAccount("to delete");
             accountService.delete(acc);
-            System.out.println(ConsoleStyle.success(" Account deleted."));
+            System.out.println(ConsoleStyle.success("Account deleted."));
 
         } catch (UserCancelledException e) {
             System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
-        } catch (AccountOperationException | UserLoginException e) {
-            System.out.println(ConsoleStyle.error(" " + e.getMessage()));
+        } catch (AccountOperationException e) {
+            System.out.println(ConsoleStyle.error("Could not delete account: " + e.getMessage()));
+        } catch (UserLoginException e) {
+            System.out.println(ConsoleStyle.error(SESSION_ERROR + e.getMessage()));
+        } catch (Exception e) {
+            System.out.println(ConsoleStyle.error(UNEXPECTED_ERROR + e.getMessage()));
         }
     }
 
@@ -116,11 +140,10 @@ public class AccountMenuCliController implements MenuCliController {
      * @return the selected {@link AccountInterface}
      * @throws UserCancelledException if user cancels or inputs "back"
      */
-    private AccountInterface selectAccount(String label) throws UserCancelledException {
+    private AccountInterface selectAccount(String label) throws UserCancelledException, AccountOperationException {
         var list = accountService.getCurrentUser().getAccountList();
         if (list.isEmpty()) {
-            System.out.println(ConsoleStyle.warning(" No accounts available."));
-            throw new UserCancelledException();
+            throw new AccountOperationException("No accounts available.");
         }
 
         for (int i = 0; i < list.size(); i++) {
@@ -128,15 +151,15 @@ public class AccountMenuCliController implements MenuCliController {
         }
 
         while (true) {
-            String input = ConsoleUtils.prompt("Enter account " + label + " index (or 'back')", false);
+            String input = ConsoleUtils.prompt("Enter account " + label, false);
             if (input == null || input.equalsIgnoreCase("back")) throw new UserCancelledException();
 
             try {
                 int index = Integer.parseInt(input.trim()) - 1;
                 if (index >= 0 && index < list.size()) return list.get(index);
-                System.out.println(ConsoleStyle.error(" Index out of range."));
+                System.out.println(ConsoleStyle.error("Index out of range."));
             } catch (NumberFormatException e) {
-                System.out.println(ConsoleStyle.error(" Invalid index."));
+                System.out.println(ConsoleStyle.error("Invalid index."));
             }
         }
     }
@@ -152,8 +175,11 @@ public class AccountMenuCliController implements MenuCliController {
         while (true) {
             int choice = ConsoleUtils.showMenu(title, false, options);
             if (choice == -1 || choice > actions.length || actions[choice - 1] == null) return;
-
             actions[choice - 1].run();
         }
+    }
+
+    public void setUser(User user) {
+        this.accountService.setCurrentUser(user);
     }
 }

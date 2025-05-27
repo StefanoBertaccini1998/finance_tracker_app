@@ -54,7 +54,7 @@ public class MainMenuCliController {
         this.userMenuCliController = new UserMenuCliController(userService, mementoService, logger);
         this.csvMenuCliController = new CsvMenuCliController(fileIOService, logger);
         this.accountMenuCliController = new AccountMenuCliController(accountService);
-        this.transactionMenuCliController = new TransactionMenuCliController(transactionService, null); // user will be set later
+        this.transactionMenuCliController = new TransactionMenuCliController(transactionService); // user will be set later
     }
 
     /**
@@ -69,6 +69,8 @@ public class MainMenuCliController {
 
         // Propagate user to transaction/account services
         transactionMenuCliController.setUser(currentUser);
+        accountMenuCliController.setUser(currentUser);
+        csvMenuCliController.setUser(currentUser);
 
         // Step 2: Show main menu
         showMainMenu();

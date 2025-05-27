@@ -8,7 +8,6 @@ import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
-import it.finance.sb.utility.InputSanitizer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -48,6 +47,7 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
 
         newlyCreatedAccounts.clear();
         List<AbstractTransaction> transactions = new ArrayList<>();
+        List<String> localErrors = new ArrayList<>();
         int lineNum = 0;
 
         try (BufferedReader reader = Files.newBufferedReader(inputFile)) {
@@ -65,20 +65,26 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
 
                 try {
                     AbstractTransaction transaction = parseLine(line, lineNum, accountMap, autoCreateMissingAccounts);
-                    InputSanitizer.validate(transaction);
                     transactions.add(transaction);
-                    logger.fine(()->"Parsed transaction: " + transaction);
+                    logger.fine(() -> "Parsed transaction: " + transaction);
                 } catch (Exception e) {
                     String msg = "[Line " + lineNum + "] " + e.getMessage();
-                    if (errorLog != null) errorLog.add(msg);
                     logger.warning("Skipped line " + lineNum + ": " + e.getMessage());
-                    if (!skipBadLines) {
-                        throw new DataValidationException(msg, e);
-                    }
+                    localErrors.add(msg);
                 }
             }
         }
-        logger.info(()->"Completed import. Total parsed: " + transactions.size());
+
+        // Aggiunta all'errorLog esterno (se fornito)
+        if (errorLog != null) errorLog.addAll(localErrors);
+
+        // Se skipBadLines == false e ci sono errori, fallisce
+        if (!skipBadLines && !localErrors.isEmpty()) {
+            String summary = "Import failed. Invalid lines:\n" + String.join("\n", localErrors);
+            throw new DataValidationException(summary);
+        }
+
+        logger.info(() -> "Completed import. Total parsed: " + transactions.size());
         return transactions;
     }
 
@@ -88,20 +94,55 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
                                           boolean autoCreate) throws DataValidationException, TransactionOperationException {
 
         String[] fields = line.split(",", -1);
-        if (fields.length < 8) throw new DataValidationException("Line " + lineNum + ": too few fields.");
+        if (fields.length < 8) {
+            throw new DataValidationException("Line " + lineNum + ": too few fields. Expected 8 fields.");
+        }
 
-        TransactionType type = TransactionType.valueOf(fields[1].trim());
-        double amount = Double.parseDouble(fields[2].trim());
+        String typeStr = fields[1].trim();
+        String amountStr = fields[2].trim();
         String fromName = fields[3].trim();
         String toName = fields[4].trim();
         String category = fields[5].trim().isEmpty() ? "Uncategorized" : fields[5].trim();
         String reason = fields[6].trim();
-        Date date = new Date(Long.parseLong(fields[7].trim()));
+        String dateStr = fields[7].trim();
+
+        // Mandatory field check
+        if (typeStr.isEmpty()) {
+            throw new DataValidationException("Line " + lineNum + ": missing transaction type.");
+        }
+        if (amountStr.isEmpty()) {
+            throw new DataValidationException("Line " + lineNum + ": missing amount.");
+        }
+        if (dateStr.isEmpty()) {
+            throw new DataValidationException("Line " + lineNum + ": missing date.");
+        }
+
+        TransactionType type;
+        double amount;
+        Date date;
+
+        try {
+            type = TransactionType.valueOf(typeStr);
+        } catch (IllegalArgumentException e) {
+            throw new DataValidationException("Line " + lineNum + ": invalid transaction type: '" + typeStr + "'");
+        }
+
+        try {
+            amount = Double.parseDouble(amountStr);
+        } catch (NumberFormatException e) {
+            throw new DataValidationException("Line " + lineNum + ": invalid amount: '" + amountStr + "'");
+        }
+
+        try {
+            date = new Date(Long.parseLong(dateStr));
+        } catch (NumberFormatException e) {
+            throw new DataValidationException("Line " + lineNum + ": invalid date format: '" + dateStr + "'");
+        }
 
         AccountInterface from = resolveAccount(accountMap, fromName, autoCreate);
         AccountInterface to = resolveAccount(accountMap, toName, autoCreate);
 
-        validateRequiredAccounts(type, from, to);
+        validateRequiredAccounts(type, from, to, lineNum);
 
         return switch (type) {
             case INCOME -> factory.createIncome(amount, category, reason, date, to);
@@ -112,17 +153,24 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
 
     private void validateRequiredAccounts(TransactionType type,
                                           AccountInterface from,
-                                          AccountInterface to) throws DataValidationException {
+                                          AccountInterface to,
+                                          int lineNum) throws DataValidationException {
         switch (type) {
             case INCOME -> {
-                if (to == null) throw new DataValidationException("Missing destination account for INCOME");
+                if (to == null)
+                    throw new DataValidationException("Line " + lineNum + ": missing destination account for INCOME");
             }
             case EXPENSE -> {
-                if (from == null) throw new DataValidationException("Missing source account for EXPENSE");
+                if (from == null)
+                    throw new DataValidationException("Line " + lineNum + ": missing source account for EXPENSE");
             }
             case MOVEMENT -> {
-                if (from == null) throw new DataValidationException("Missing source account for MOVEMENT");
-                if (to == null) throw new DataValidationException("Missing destination account for MOVEMENT");
+                if (from == null)
+                    throw new DataValidationException("Line " + lineNum + ": missing source account for MOVEMENT");
+                if (to == null)
+                    throw new DataValidationException("Line " + lineNum + ": missing destination account for MOVEMENT");
+                if (from.equals(to))
+                    throw new DataValidationException("Line " + lineNum + ": source and destination accounts must be different");
             }
         }
     }

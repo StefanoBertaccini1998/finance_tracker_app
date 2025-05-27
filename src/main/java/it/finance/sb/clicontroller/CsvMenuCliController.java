@@ -5,6 +5,7 @@ import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.UserCancelledException;
 import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.model.transaction.AbstractTransaction;
+import it.finance.sb.model.user.User;
 import it.finance.sb.service.FileIOService;
 import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.ConsoleUtils;
@@ -22,12 +23,12 @@ import java.util.logging.Logger;
  * It communicates with the {@link FileIOService} to perform the underlying I/O logic
  * and logs relevant information using {@link Logger}.
  * Provides exception shielding and safe user interactions.
- *
  */
 public class CsvMenuCliController implements MenuCliController {
 
     private final FileIOService fileIOService;
     private final Logger logger;
+
 
     /**
      * Constructs a new {@code CsvMenuCliController} with the given services.
@@ -66,23 +67,34 @@ public class CsvMenuCliController implements MenuCliController {
             boolean skipErrors = ConsoleUtils.prompt("Skip errors? (y/n)", false).equalsIgnoreCase("y");
 
             List<AbstractTransaction> imported = fileIOService.importTransactions(path, autoCreate, skipErrors);
-            System.out.println(ConsoleStyle.success(" Transactions imported."));
+            System.out.println(ConsoleStyle.success("Transactions imported successfully."));
             TransactionPrinter.printTransactions(imported);
 
-        } catch (DataValidationException e) {
-            logger.log(Level.SEVERE, "Import failed (validation)", e);
-            System.out.println(ConsoleStyle.error(" Failed to import transactions. Validation issue."));
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Import failed (IO)", e);
-            System.out.println(ConsoleStyle.error(" Failed to import transactions. File error."));
-        } catch (UserLoginException e) {
-            logger.log(Level.SEVERE, "Import failed (user not logged in)", e);
-            System.out.println(ConsoleStyle.error(" User must be logged in."));
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            System.out.println(ConsoleStyle.back("Import cancelled by user."));
+        } catch (UserLoginException e) {
+            logger.log(Level.SEVERE, "Import failed: no user logged in", e);
+            System.out.println(ConsoleStyle.error("Please log in before importing transactions."));
         } catch (FileIOException e) {
-            logger.log(Level.SEVERE, "Import failed, error during file parsing", e);
-            System.out.println(ConsoleStyle.error(" Error during file parsing"));
+            logger.log(Level.SEVERE, "Import failed during file parsing", e);
+            System.out.println(ConsoleStyle.error("The file format appears invalid. Please check the CSV content and structure."));
+
+            List<String> errors = e.getErrorLog();
+            if (errors != null && !errors.isEmpty()) {
+                System.out.println(ConsoleStyle.warning("Details of rows skipped or failed before interruption:"));
+                for (String lineError : errors) {
+                    System.out.println(ConsoleStyle.info(" - " + lineError));
+                }
+            }
+        } catch (DataValidationException e) {
+            logger.log(Level.SEVERE, "Import failed due to invalid data", e);
+            System.out.println(ConsoleStyle.error("One or more rows contain invalid or incomplete data. Please review your CSV."));
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Import failed due to IO issue", e);
+            System.out.println(ConsoleStyle.error("The file could not be read. Check the path and ensure the file exists."));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Unexpected import error", e);
+            System.out.println(ConsoleStyle.error("An unexpected error occurred during import. Please try again."));
         }
     }
 
@@ -91,17 +103,20 @@ public class CsvMenuCliController implements MenuCliController {
      */
     private void exportTransactions() {
         try {
-            Path path = Path.of(ConsoleUtils.prompt("Enter output CSV path", false));
+            Path path = Path.of(ConsoleUtils.prompt("Enter output CSV file path", false));
             fileIOService.exportTransactions(path);
-            System.out.println(ConsoleStyle.success(" Exported to: " + path));
+            System.out.println(ConsoleStyle.success("Transactions successfully exported to: " + path));
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back(" Operation cancelled."));
+            System.out.println(ConsoleStyle.back("Export cancelled by user."));
         } catch (UserLoginException e) {
-            logger.log(Level.SEVERE, "Export failed (user not logged in)", e);
-            System.out.println(ConsoleStyle.error(" User must be logged in."));
+            logger.log(Level.SEVERE, "Export failed: no user logged in", e);
+            System.out.println(ConsoleStyle.error("Please log in before exporting transactions."));
         } catch (FileIOException e) {
-            logger.log(Level.SEVERE, "Export failed (file issue)", e);
-            System.out.println(ConsoleStyle.error(" Failed to export transactions."));
+            logger.log(Level.SEVERE, "Export failed due to file access issue", e);
+            System.out.println(ConsoleStyle.error("Failed to write the CSV file. Check file permissions or path validity."));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Unexpected export error", e);
+            System.out.println(ConsoleStyle.error("An unexpected error occurred during export. Please try again."));
         }
     }
 
@@ -124,5 +139,9 @@ public class CsvMenuCliController implements MenuCliController {
                 actions[choice - 1].run();
             }
         }
+    }
+
+    public void setUser(User user) {
+        this.fileIOService.setCurrentUser(user);
     }
 }

@@ -40,7 +40,7 @@ public class User {
         for (TransactionType type : TransactionType.values()) {
             transactionLists.put(type, new TransactionList());
         }
-        this.categorySet = new HashSet<>(List.of("Food", "Utilities", "Transport"));
+        this.categorySet = new HashSet<>(List.of("FOOD", "UTILITIES", "TRANSPORT"));
         accountList = new ArrayList<>();
     }
 
@@ -159,7 +159,7 @@ public class User {
      * @return the boolean
      */
     public boolean isCategoryAllowed(String category) {
-        return categorySet.contains(category.toLowerCase());
+        return categorySet.contains(category.toUpperCase());
     }
 
     /**
@@ -168,7 +168,7 @@ public class User {
      * @param category the category
      */
     public void addCategory(String category) {
-        categorySet.add(category.toLowerCase());
+        categorySet.add(category.toUpperCase());
     }
 
     /**
