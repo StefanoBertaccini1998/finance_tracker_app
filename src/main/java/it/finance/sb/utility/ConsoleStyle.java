@@ -15,46 +15,40 @@ public class ConsoleStyle {
         throw new IllegalStateException("Utility class");
     }
 
-    // ℹ️ Info messages
     public static String info(String msg) {
-        return CYAN + "\nℹ️  " + msg + RESET;
+        return CYAN + "\n" + ConsoleEmoji.INFO + msg + RESET;
     }
 
-    // ✅ Success
     public static String success(String msg) {
-        return GREEN + "\n✅ " + msg + RESET;
+        return GREEN + "\n" + ConsoleEmoji.SUCCESS + " " + msg + RESET;
     }
 
-    // ⚠️ Warning
     public static String warning(String msg) {
-        return YELLOW + "\n⚠️  " + msg + RESET;
+        return YELLOW + "\n" + ConsoleEmoji.WARNING + msg + RESET;
     }
 
-    // ⚠️ Back
     public static String back(String msg) {
-        return YELLOW + "\n↩️  " + msg + RESET;
+        return YELLOW + "\n" + ConsoleEmoji.BACK + msg + RESET;
     }
 
-    // ❌ Error
     public static String error(String msg) {
-        return RED + "\n❌ " + msg + RESET;
+        return RED + "\n" + ConsoleEmoji.ERROR + " " + msg + RESET;
     }
 
-    // 🧠 Prompts & Headers
     public static String header(String msg) {
-        return BOLD + BLUE + "\n🧠 " + msg + RESET;
+        return BOLD + BLUE + "\n" + ConsoleEmoji.HEADER + " " + msg + RESET;
     }
 
     public static String section(String msg) {
-        return BOLD + PURPLE + "\n🔷 " + msg + RESET;
+        return BOLD + PURPLE + "\n" + ConsoleEmoji.SECTION + " " + msg + RESET;
     }
 
     public static String menuTitle(String title) {
-        return BOLD + "\n🔹 " + title.toUpperCase() + RESET;
+        return BOLD + "\n" + ConsoleEmoji.MENU + " " + title.toUpperCase() + RESET;
     }
 
     public static String inputPrompt(String label) {
-        return BOLD + WHITE + "👉 " + label + ": " + RESET;
+        return BOLD + WHITE + ConsoleEmoji.INPUT + " " + label + ": " + RESET;
     }
 
     public static String highlight(String value) {

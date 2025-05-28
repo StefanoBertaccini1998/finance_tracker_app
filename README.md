@@ -203,15 +203,31 @@ The Finance Tracker application includes a comprehensive and well-organized suit
 * Java 17+
 * Maven 3.6+
 
-### Build & Run (Recommended - Maven):
+### ✅ Recommended (Maven-based)
 
-```bash
+```Clone
 git clone https://github.com/StefanoBertaccini1998/finance_tracker_app.git
 cd finance_tracker_app
 
-# Compile the project
+# Compile
 mvn clean compile
 
-# Run the main application
-mvn exec:java -Dexec.mainClass="it.finance.sb.MainApplication"
+# Run Bash
+mvn exec:java -Dexec.mainClass="it.finance.sb.MainApplication" -Demoji.enabled=true
+
+or
+
+# Run CMD / Powershell
+mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java "-Dexec.mainClass=it.finance.sb.MainApplication" -Demoji.enabled=true
+
+
+
 ```
+### ⚠️ Terminal Compatibility Tips
+
+If you see broken emojis (e.g., `ƒø`, `⧫`) or formatting glitches:
+
+- Use a terminal that supports UTF-8 (e.g., Windows Terminal, IntelliJ, VSCode)
+- Use a font like Cascadia Code, JetBrains Mono, or Consolas
+- In Git Bash: emojis might not render properly — consider switching to Windows Terminal with PowerShell or CMD
+- (Optional) Replace emoji icons in `ConsoleStyle` with ASCII symbols like `[!]`, `[✓]`, etc.
