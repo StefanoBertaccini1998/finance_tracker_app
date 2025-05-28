@@ -11,6 +11,7 @@ import it.finance.sb.service.UserService;
 import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.ConsoleUtils;
 
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,23 +59,46 @@ public class MainMenuCliController {
     /**
      * Starts the main application flow: login, menu, exit.
      */
-    public void run() throws UserCancelledException {
-        System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
-        logger.info("Main menu started");
-        // Step 1: Login user
-        userMenuCliController.show();
-        this.currentUser = userMenuCliController.getCurrentUser();
+    public void run() {
+        try {
+            System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
+            logger.info("Main menu started");
 
-        // Propagate user to transaction/account services
-        transactionMenuCliController.setUser(currentUser);
-        accountMenuCliController.setUser(currentUser);
-        csvMenuCliController.setUser(currentUser);
+            // Step 1: Login user
+            userMenuCliController.show();
+            this.currentUser = userMenuCliController.getCurrentUser();
 
-        // Step 2: Show main menu
-        showMainMenu();
+            // Step 2: Propagate user to services
+            transactionMenuCliController.setUser(currentUser);
+            accountMenuCliController.setUser(currentUser);
+            csvMenuCliController.setUser(currentUser);
 
-        // Step 3: Exit
-        System.out.println(ConsoleStyle.info("Thank you for using FinanceTrack!"));
+            // Step 3: Show main menu
+            showMainMenu();
+
+            // Step 4: Exit
+            System.out.println(ConsoleStyle.info("Thank you for using FinanceTrack!"));
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back("Exited by user."));
+            logger.info("User cancelled operation.");
+        } catch (NoSuchElementException | IllegalStateException e) {
+            System.out.println(ConsoleStyle.error("Session interrupted. Are you exiting with Ctrl+C?"));
+            logger.warning("CLI interrupted: " + e.getMessage());
+
+            // AutoSave
+            if (currentUser != null) {
+                try {
+                    mementoService.saveUser(currentUser);
+                    System.out.println(ConsoleStyle.success("Progress auto-saved before shutdown."));
+                } catch (Exception ex) {
+                    System.out.println(ConsoleStyle.error("❌ Failed to auto-save user: " + ex.getMessage()));
+                    logger.severe("Auto-save failed: " + ex.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(ConsoleStyle.error("Unexpected fatal error."));
+            logger.log(Level.SEVERE, "Unhandled error in MainMenuCliController.run()", e);
+        }
     }
 
     /**

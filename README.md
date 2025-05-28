@@ -214,12 +214,10 @@ mvn clean compile
 
 # Run Bash
 mvn exec:java -Dexec.mainClass="it.finance.sb.MainApplication" -Demoji.enabled=true
-
 or
 
 # Run CMD / Powershell
-mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java "-Dexec.mainClass=it.finance.sb.MainApplication" -Demoji.enabled=true
-
+mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java "-Dexec.mainClass=it.finance.sb.MainApplication" "-Demoji.enabled=true"
 
 
 ```
