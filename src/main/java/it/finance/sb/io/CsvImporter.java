@@ -13,19 +13,23 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 /**
- * The type Csv importer.
+ * CsvImporter reads a CSV file containing financial transactions and converts each line into
+ * an AbstractTransaction object. It supports multi-threaded parsing for performance and
+ * automatic account creation when needed.
  */
 public class CsvImporter implements ImporterI<AbstractTransaction> {
 
     private static final Logger logger = LoggerFactory.getSafeLogger(CsvImporter.class);
-    private final List<AccountInterface> newlyCreatedAccounts = new ArrayList<>();
+    // List of accounts created during import, must be thread-safe
+    private final List<AccountInterface> newlyCreatedAccounts = Collections.synchronizedList(new ArrayList<>());
     private static final String EXPECTED_HEADER = "TransactionId,Type,Amount,From,To,Category,Reason,Date";
 
     private final FinanceAbstractFactory factory;
@@ -34,6 +38,19 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
         this.factory = factory;
     }
 
+    /**
+     * Imports transactions from a CSV file. Each line is parsed in a separate thread.
+     * Handles errors gracefully and optionally creates missing accounts.
+     *
+     * @param inputFile                 Path to the CSV file
+     * @param accountMap                Map of existing accounts
+     * @param autoCreateMissingAccounts Flag to create accounts if not found
+     * @param skipBadLines              Flag to skip lines with parsing errors
+     * @param errorLog                  Optional list to collect error messages
+     * @return List of parsed transactions
+     * @throws IOException             if file reading fails or parsing threads fail
+     * @throws DataValidationException if errors are found and skipping is disabled
+     */
     @Override
     public List<AbstractTransaction> importFrom(Path inputFile,
                                                 Map<String, AccountInterface> accountMap,
@@ -41,53 +58,90 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
                                                 boolean skipBadLines,
                                                 List<String> errorLog) throws IOException, DataValidationException {
         logger.info(() -> "Starting import from CSV: " + inputFile);
+
+        // Verify file existence and type
         if (!Files.exists(inputFile) || !Files.isRegularFile(inputFile)) {
             throw new IOException("Input file not found or invalid.");
         }
 
         newlyCreatedAccounts.clear();
-        List<AbstractTransaction> transactions = new ArrayList<>();
-        List<String> localErrors = new ArrayList<>();
-        int lineNum = 0;
+        List<AbstractTransaction> transactions = Collections.synchronizedList(new ArrayList<>());
+        List<String> localErrors = Collections.synchronizedList(new ArrayList<>());
+
+        // Create thread pool with a size equal to number of CPU cores
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         try (BufferedReader reader = Files.newBufferedReader(inputFile)) {
-            // Validate header
+            // Check CSV header
             String header = reader.readLine();
-            lineNum++;
             if (header == null || !header.strip().equalsIgnoreCase(EXPECTED_HEADER)) {
                 throw new IOException("Invalid or missing CSV header. Expected: " + EXPECTED_HEADER);
             }
 
+            List<Future<?>> futures = new ArrayList<>();
+            int[] lineNum = {1};
             String line;
-            while ((line = reader.readLine()) != null) {
-                lineNum++;
-                if (line.trim().isEmpty()) continue;
 
+            // Read and dispatch each line to a thread
+            while ((line = reader.readLine()) != null) {
+                final String currentLine = line;
+                final int currentLineNum = ++lineNum[0];
+
+                if (currentLine.trim().isEmpty()) continue;
+
+                // Each line is parsed in its own task
+                futures.add(executor.submit(() -> {
+                    try {
+                        AbstractTransaction tx = parseLine(currentLine, currentLineNum, accountMap, autoCreateMissingAccounts);
+                        transactions.add(tx);
+                        logger.fine(() -> "Parsed transaction: " + tx);
+                    } catch (Exception e) {
+                        String msg = "[Line " + currentLineNum + "] " + e.getMessage();
+                        logger.warning("Skipped line " + currentLineNum + ": " + e.getMessage());
+                        localErrors.add(msg);
+                    }
+                }));
+            }
+
+            // Ensure all parsing tasks complete
+            for (Future<?> future : futures) {
                 try {
-                    AbstractTransaction transaction = parseLine(line, lineNum, accountMap, autoCreateMissingAccounts);
-                    transactions.add(transaction);
-                    logger.fine(() -> "Parsed transaction: " + transaction);
+                    future.get();
                 } catch (Exception e) {
-                    String msg = "[Line " + lineNum + "] " + e.getMessage();
-                    logger.warning("Skipped line " + lineNum + ": " + e.getMessage());
-                    localErrors.add(msg);
+                    handleThreadException(e);
                 }
             }
+        } finally {
+            // Always shutdown executor to release system resources
+            executor.shutdown();
+            executor.close();
         }
 
-        // Aggiunta all'errorLog esterno (se fornito)
+        // Append local parsing errors to external log if provided
         if (errorLog != null) errorLog.addAll(localErrors);
 
-        // Se skipBadLines == false e ci sono errori, fallisce
+        // Fail if not skipping bad lines and any errors were encountered
         if (!skipBadLines && !localErrors.isEmpty()) {
-            String summary = "Import failed. Invalid lines:\n" + String.join("\n", localErrors);
-            throw new DataValidationException(summary);
+            throw new DataValidationException("Import failed. Invalid lines:\n" + String.join("\n", localErrors));
         }
 
         logger.info(() -> "Completed import. Total parsed: " + transactions.size());
         return transactions;
     }
 
+
+    /**
+     * Parses a single line of CSV into an AbstractTransaction.
+     * Validates fields, resolves or creates accounts, and constructs the appropriate transaction type.
+     *
+     * @param line       the raw CSV line
+     * @param lineNum    the line number (for error messages)
+     * @param accountMap the existing account map to match source/destination
+     * @param autoCreate flag to auto-create accounts if missing
+     * @return the parsed AbstractTransaction
+     * @throws DataValidationException       if any validation fails (type, amount, date, etc.)
+     * @throws TransactionOperationException if creation logic fails
+     */
     private AbstractTransaction parseLine(String line,
                                           int lineNum,
                                           Map<String, AccountInterface> accountMap,
@@ -175,9 +229,13 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
         }
     }
 
-    private AccountInterface resolveAccount(Map<String, AccountInterface> accountMap,
-                                            String name,
-                                            boolean autoCreate) throws DataValidationException {
+    /**
+     * Resolves an account by name. Creates a new account if not found and autoCreate is enabled.
+     * Synchronized to prevent concurrent creation of the same account.
+     */
+    private synchronized AccountInterface resolveAccount(Map<String, AccountInterface> accountMap,
+                                                         String name,
+                                                         boolean autoCreate) throws DataValidationException {
         if (name.isBlank()) return null;
 
         AccountInterface account = accountMap.get(name);
@@ -191,5 +249,26 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
 
     public List<AccountInterface> getNewlyCreatedAccounts() {
         return newlyCreatedAccounts;
+    }
+
+    /**
+     * Handles exceptions thrown during multi-threaded parsing.
+     * Restores interrupted state and wraps causes into IOException.
+     */
+    private void handleThreadException(Exception e) throws IOException {
+        if (e instanceof InterruptedException ie) {
+            logger.warning("CSV import thread interrupted: " + ie.getMessage());
+            Thread.currentThread().interrupt();
+            throw new IOException("CSV import was interrupted.", ie);
+        } else if (e instanceof ExecutionException ee) {
+            Throwable cause = ee.getCause();
+            if (cause instanceof DataValidationException || cause instanceof TransactionOperationException) {
+                throw new IOException("Validation error during CSV import: " + cause.getMessage(), cause);
+            } else {
+                throw new IOException("Unexpected error during CSV import: " + cause.getMessage(), cause);
+            }
+        } else {
+            throw new IOException("Unhandled error during thread execution: " + e.getMessage(), e);
+        }
     }
 }

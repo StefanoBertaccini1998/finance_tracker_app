@@ -1,7 +1,7 @@
 package it.finance.sb.utility;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +17,8 @@ public class EncryptionUtils {
 
     private static final String TRANSFORMATION = "AES/GCM/NoPadding";
     private static final String ALGORITHM = "AES";
+
+    private static final int GCM_TAG_LENGTH = 128; // in bits
     private static final int AES_KEY_SIZE = 16; // 128 bits
     private static final int IV_SIZE = 16;
     private static final Path DEFAULT_KEY_PATH = Path.of(".secure_keys", "user.key");
@@ -56,9 +58,9 @@ public class EncryptionUtils {
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
         byte[] iv = new byte[IV_SIZE];
         new SecureRandom().nextBytes(iv);
-        IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
-        cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
+        GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+        cipher.init(Cipher.ENCRYPT_MODE, key, gcmSpec);
 
         String content = username + ":" + plainText;
         byte[] encrypted = cipher.doFinal(content.getBytes(StandardCharsets.UTF_8));
@@ -78,7 +80,7 @@ public class EncryptionUtils {
         byte[] iv = Arrays.copyOfRange(combined, 0, IV_SIZE);
         byte[] encrypted = Arrays.copyOfRange(combined, IV_SIZE, combined.length);
 
-        cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
+        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
         byte[] decrypted = cipher.doFinal(encrypted);
 
         String result = new String(decrypted, StandardCharsets.UTF_8);
