@@ -196,4 +196,17 @@ public class UserMenuCliController implements MenuCliController {
             }
         }
     }
+
+    /**
+     * Saves the current user state to disk using the memento service.
+     */
+    public void saveUser() {
+        try {
+            mementoService.saveUser(currentUser);
+            System.out.println(ConsoleStyle.success(" User saved."));
+        } catch (MementoException e) {
+            logger.log(Level.SEVERE, "Failed to save user", e);
+            System.out.println(ConsoleStyle.error(" Failed to save user."));
+        }
+    }
 }

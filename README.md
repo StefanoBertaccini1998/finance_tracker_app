@@ -201,12 +201,17 @@ The Finance Tracker application includes a comprehensive and well-organized suit
 ### Prerequisites:
 
 * Java 17+
+* Maven 3.6+
 
-### Build & Run:
+### Build & Run (Recommended - Maven):
 
 ```bash
 git clone https://github.com/StefanoBertaccini1998/finance_tracker_app.git
 cd finance_tracker_app
-javac -d out $(find . -name "*.java")
-java -cp out it.finance.sb.FinanceTrackApplication
+
+# Compile the project
+mvn clean compile
+
+# Run the main application
+mvn exec:java -Dexec.mainClass="it.finance.sb.MainApplication"
 ```
