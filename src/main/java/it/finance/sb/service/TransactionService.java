@@ -10,7 +10,6 @@ import it.finance.sb.model.composite.TransactionList;
 import it.finance.sb.model.iterator.TransactionIterator;
 import it.finance.sb.model.transaction.*;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +41,7 @@ public class TransactionService extends BaseService {
         requireLoggedInUser();
 
         if (amount <= 0) {
-            logger.warning(()->"Rejected transaction with non-positive amount: " + amount);
+            logger.warning(() -> "Rejected transaction with non-positive amount: " + amount);
             throw new TransactionOperationException("Amount must be greater than 0.");
         }
         if (fromAccount != null && fromAccount.getBalance() < amount) {
@@ -153,20 +152,38 @@ public class TransactionService extends BaseService {
      * Returns all transactions across all types.
      */
     public List<AbstractTransaction> getAllTransactionsFlattened() {
-        List<AbstractTransaction> all = new ArrayList<>();
-        getCurrentUser().getTransactionLists().values()
-                .forEach(list -> all.addAll(list.getFlattenedTransactions()));
-        return all;
+        return getCurrentUser().getTransactionLists().values().stream()
+                .flatMap(list -> list.getFlattenedTransactions().stream())
+                .toList();
     }
 
     /**
-     * Filters transactions by category.
+     * Filters transactions by category (case-insensitive).
      */
     public List<AbstractTransaction> getTransactionsByCategory(String category) {
         return getAllTransactionsFlattened().stream()
-                .filter(tx -> tx.getCategory().equalsIgnoreCase(category))
+                .filter(tx -> tx.getCategory() != null && tx.getCategory().equalsIgnoreCase(category))
                 .toList();
     }
+
+    /**
+     * Filters transactions by type.
+     */
+    public List<AbstractTransaction> getTransactionsByType(TransactionType type) {
+        return getAllTransactionsFlattened().stream()
+                .filter(tx -> tx.getType() == type)
+                .toList();
+    }
+
+    /**
+     * Filters transactions whose reason contains a keyword (case-insensitive).
+     */
+    public List<AbstractTransaction> getTransactionsByReasonContains(String keyword) {
+        return getAllTransactionsFlattened().stream()
+                .filter(tx -> keyword != null && tx.getReason() != null && tx.getReason().toLowerCase().contains(keyword.toLowerCase()))
+                .toList();
+    }
+
 
     // === Internal helpers ===
 

@@ -54,7 +54,7 @@ public class UserMementoManager {
 
         String json = mapper.writeValueAsString(snapshot);
         try {
-            String encrypted = EncryptionUtils.encrypt(json);
+            String encrypted = EncryptionUtils.encrypt(json,snapshot.name());
             Files.writeString(filePath, encrypted);
             logger.info(() -> "[UserMementoManager] Encrypted and saved snapshot: " + filePath);
         } catch (GeneralSecurityException e) {
@@ -82,7 +82,7 @@ public class UserMementoManager {
 
         try {
             String encrypted = Files.readString(filePath);
-            String decrypted = EncryptionUtils.decrypt(encrypted);
+            String decrypted = EncryptionUtils.decrypt(encrypted,username);
             logger.info(() -> "[UserMementoManager] Decrypted and loaded snapshot: " + filePath);
             return Optional.of(mapper.readValue(decrypted, UserSnapshot.class));
         } catch (GeneralSecurityException e) {

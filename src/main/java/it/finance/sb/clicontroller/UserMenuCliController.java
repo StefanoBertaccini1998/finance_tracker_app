@@ -140,28 +140,29 @@ public class UserMenuCliController implements MenuCliController {
     public void createNewUser() {
         System.out.println(ConsoleStyle.menuTitle("Create New User"));
 
-        while (true) {
+        boolean completed = false;
+        while (!completed) {
             try {
                 String name = ConsoleUtils.prompt("Enter your name", false);
 
-                String ageStr = ConsoleUtils.prompt("Enter your age", false);
-                int age = Integer.parseInt(ageStr);
+                int age = Integer.parseInt(ConsoleUtils.prompt("Enter your age", false));
 
                 Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
 
                 String password = ConsoleUtils.prompt("Set a password", true);
                 String confirmPassword = ConsoleUtils.prompt("Confirm password", true);
+
                 if (!password.equals(confirmPassword)) {
                     System.out.println(ConsoleStyle.error("Passwords do not match."));
-                    return;
+                    continue;
                 }
 
-                currentUser = userService.create(name, age, gender,PasswordUtils.hash(password));
+                currentUser = userService.create(name, age, gender, PasswordUtils.hash(password));
 
                 mementoService.saveUser(currentUser);
 
                 System.out.println(ConsoleStyle.success("User created and saved!"));
-                break;
+                completed = true;
             } catch (UserCancelledException e) {
                 System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
                 break;

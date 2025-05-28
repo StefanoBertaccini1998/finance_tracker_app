@@ -13,10 +13,7 @@ import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.ConsoleUtils;
 import it.finance.sb.utility.TransactionPrinter;
 
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * CLI controller for managing user transactions.
@@ -158,7 +155,55 @@ public class TransactionMenuCliController implements MenuCliController {
             System.out.println(ConsoleStyle.warning("No transactions available."));
         } else {
             TransactionPrinter.printTransactions(list);
+            try {
+                menuLoop("View Transactions by:",
+                        new String[]{
+                                "Type",
+                                "Category",
+                                "Reason",
+                                "Back"
+                        },
+                        this::filterByType,
+                        this::filterByCategory,
+                        this::filterByReason,
+                        null);
+            } catch (UserCancelledException e) {
+                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
+            }
         }
+    }
+
+    private void filterByType() {
+        try {
+            TransactionType type = ConsoleUtils.selectEnum(TransactionType.class, "Transaction Type", false);
+            List<AbstractTransaction> filtered = transactionService.getTransactionsByType(type);
+            TransactionPrinter.printTransactions(filtered);
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
+        }
+
+    }
+
+    private void filterByCategory() {
+        try {
+            String category = ConsoleUtils.selectOrCreateCategory(user.getSortedCategories(), false);
+            List<AbstractTransaction> filtered = transactionService.getTransactionsByCategory(category);
+            TransactionPrinter.printTransactions(filtered);
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
+        }
+
+    }
+
+    private void filterByReason() {
+        String input = null;
+        try {
+            input = ConsoleUtils.prompt("Enter keyword to search in reasons:", false);
+        } catch (UserCancelledException e) {
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
+        }
+        List<AbstractTransaction> filtered = transactionService.getTransactionsByReasonContains(input);
+        TransactionPrinter.printTransactions(filtered);
     }
 
     /**

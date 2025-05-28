@@ -6,6 +6,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 public class PasswordUtils {
+
+    private PasswordUtils() {
+        throw new IllegalStateException("Utility class");
+    }
+
     public static String hash(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
