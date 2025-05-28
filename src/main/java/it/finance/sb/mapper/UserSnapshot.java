@@ -14,6 +14,7 @@ public record UserSnapshot(
         String name,
         int age,
         Gender gender,
+        String password,
         List<String> categories,
         List<AccountInterface> accounts,
         Map<TransactionType, List<AbstractTransaction>> transactions
@@ -24,6 +25,7 @@ public record UserSnapshot(
             @JsonProperty("name") String name,
             @JsonProperty("age") int age,
             @JsonProperty("gender") Gender gender,
+            @JsonProperty("password") String password,
             @JsonProperty("categories") List<String> categories,
             @JsonProperty("accounts") List<AccountInterface> accounts,
             @JsonProperty("transactions") Map<TransactionType, List<AbstractTransaction>> transactions
@@ -31,6 +33,7 @@ public record UserSnapshot(
         this.name = name;
         this.age = age;
         this.gender = gender;
+        this.password = password;
         this.categories = categories;
         this.accounts = accounts;
         this.transactions = transactions;

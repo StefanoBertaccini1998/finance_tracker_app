@@ -25,12 +25,12 @@ public class UserService extends BaseService {
      * @param gender the gender
      * @return the user
      */
-    public User create(String name, int age, Gender gender) throws DataValidationException {
+    public User create(String name, int age, Gender gender, String password) throws DataValidationException {
         if (name == null || name.isBlank() || gender == null || age < 1) {
             throw new DataValidationException("Invalid input for user creation.");
         }
 
-        User user = new User(name.trim(), age, gender);
+        User user = new User(name.trim(), age, gender, password);
         InputSanitizer.validate(user);
         setCurrentUser(user);
 
@@ -102,7 +102,7 @@ public class UserService extends BaseService {
         }
         if (!currentUser.isCategoryAllowed(category)) {
             currentUser.addCategory(category);
-            logger.info(()->"[UserService] Added category: '" + category + "'");
+            logger.info(() -> "[UserService] Added category: '" + category + "'");
         }
     }
 

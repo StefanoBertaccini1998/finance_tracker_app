@@ -9,6 +9,7 @@ import it.finance.sb.service.MementoService;
 import it.finance.sb.service.UserService;
 import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.ConsoleUtils;
+import it.finance.sb.utility.PasswordUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -105,9 +106,17 @@ public class UserMenuCliController implements MenuCliController {
                 return;
             }
 
+            String enteredPassword = ConsoleUtils.prompt("Enter your password", true); // true = hide input
+
             Optional<User> loaded = mementoService.loadUser(savedUsers.get(selected - 1));
+
             if (loaded.isPresent()) {
-                currentUser = loaded.get();
+                User user = loaded.get();
+                if (!user.getPassword().equals(PasswordUtils.hash(enteredPassword))) {
+                    System.out.println(ConsoleStyle.error("Incorrect password."));
+                    return;
+                }
+                currentUser = user;
                 System.out.println(ConsoleStyle.success("User loaded: " + currentUser.getName()));
             } else {
                 System.out.println(ConsoleStyle.error("Could not load the selected user. A new one will be created."));
@@ -140,7 +149,15 @@ public class UserMenuCliController implements MenuCliController {
 
                 Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
 
-                currentUser = userService.create(name, age, gender);
+                String password = ConsoleUtils.prompt("Set a password", true);
+                String confirmPassword = ConsoleUtils.prompt("Confirm password", true);
+                if (!password.equals(confirmPassword)) {
+                    System.out.println(ConsoleStyle.error("Passwords do not match."));
+                    return;
+                }
+
+                currentUser = userService.create(name, age, gender,PasswordUtils.hash(password));
+
                 mementoService.saveUser(currentUser);
 
                 System.out.println(ConsoleStyle.success("User created and saved!"));

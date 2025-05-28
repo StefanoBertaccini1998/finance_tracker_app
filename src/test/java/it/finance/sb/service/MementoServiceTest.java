@@ -5,6 +5,7 @@ import it.finance.sb.mapper.UserSnapshot;
 import it.finance.sb.memento.UserMementoManager;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
+import it.finance.sb.utility.PasswordUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -27,8 +28,8 @@ class MementoServiceTest {
 
     @Test
     void testSaveUser_success() {
-        User user = new User("John", 30, Gender.MALE);
-        UserSnapshot snapshot = new UserSnapshot("John", 30, Gender.MALE, List.of(), List.of(), Map.of());
+        User user = new User("John", 30, Gender.MALE, PasswordUtils.hash("Password"));
+        UserSnapshot snapshot = new UserSnapshot("John", 30, Gender.MALE, PasswordUtils.hash("Password"), List.of(), List.of(), Map.of());
 
         try (MockedStatic<UserMapper> mapperMock = mockStatic(UserMapper.class);
              MockedStatic<UserMementoManager> mementoMock = mockStatic(UserMementoManager.class)) {
@@ -48,8 +49,8 @@ class MementoServiceTest {
     @Test
     void testLoadUser_success() throws Exception {
         String name = "Alice";
-        UserSnapshot snapshot = new UserSnapshot(name, 25, Gender.FEMALE, List.of(), List.of(), Map.of());
-        User mockUser = new User(name, 25, Gender.FEMALE);
+        UserSnapshot snapshot = new UserSnapshot(name, 25, Gender.FEMALE, PasswordUtils.hash("Password"), List.of(), List.of(), Map.of());
+        User mockUser = new User(name, 25, Gender.FEMALE, PasswordUtils.hash("Password"));
 
         try (MockedStatic<UserMementoManager> mementoMock = mockStatic(UserMementoManager.class);
              MockedStatic<UserMapper> mapperMock = mockStatic(UserMapper.class)) {

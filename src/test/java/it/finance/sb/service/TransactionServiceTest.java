@@ -9,6 +9,7 @@ import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
+import it.finance.sb.utility.PasswordUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +37,7 @@ class TransactionServiceTest {
         factory = mock(FinanceAbstractFactory.class);
 
         transactionService = new TransactionService(userService, factory);
-        mockUser = new User("MockUser", 30, Gender.FEMALE);
+        mockUser = new User("MockUser", 30, Gender.FEMALE, PasswordUtils.hash("Password"));
         transactionService.setCurrentUser(mockUser);
 
         accFrom = mock(AccountInterface.class);

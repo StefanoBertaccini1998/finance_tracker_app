@@ -30,7 +30,7 @@ class AccountServiceTest {
         transactionService = mock(TransactionService.class);
         factory = mock(FinanceAbstractFactory.class);
         accountService = new AccountService(transactionService, factory);
-        user = new User("MockedUser", 25, Gender.MALE);
+        user = new User("MockedUser", 25, Gender.MALE, "Password");
         accountService.setCurrentUser(user);
 
         // crea un account reale da usare come ritorno della factory

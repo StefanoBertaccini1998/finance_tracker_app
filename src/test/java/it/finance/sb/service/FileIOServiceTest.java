@@ -13,6 +13,7 @@ import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
+import it.finance.sb.utility.PasswordUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -37,7 +38,7 @@ class FileIOServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = new User("TestUser", 30, Gender.OTHER);
+        user = new User("TestUser", 30, Gender.OTHER, PasswordUtils.hash("Password"));
         userService = new UserService();
         FinanceAbstractFactory factory = new DefaultFinanceFactory();
         transactionService = new TransactionService(userService, factory);

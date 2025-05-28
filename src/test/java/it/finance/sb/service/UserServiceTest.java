@@ -10,6 +10,7 @@ import it.finance.sb.model.transaction.IncomeTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
+import it.finance.sb.utility.PasswordUtils;
 import org.junit.jupiter.api.*;
 
 import java.util.Date;
@@ -32,7 +33,7 @@ class UserServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         userService = new UserService();
-        user = userService.create("Alice", 30, Gender.FEMALE);
+        user = userService.create("Alice", 30, Gender.FEMALE, PasswordUtils.hash("Password"));
 
         factory = mock(FinanceAbstractFactory.class);
         transactionService = new TransactionService(userService, factory);

@@ -4,6 +4,7 @@ import it.finance.sb.mapper.UserMapper;
 import it.finance.sb.mapper.UserSnapshot;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
+import it.finance.sb.utility.PasswordUtils;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ class MementoManagerTest {
     @Test
     @Order(1)
     void testSaveAndLoadUser() throws Exception {
-        User user = new User(TEST_NAME, 25, Gender.MALE);
+        User user = new User(TEST_NAME, 25, Gender.MALE, PasswordUtils.hash("Password"));
         user.addCategory("FOOD");
 
         UserMementoManager.save(UserMapper.toSnapshot(user));

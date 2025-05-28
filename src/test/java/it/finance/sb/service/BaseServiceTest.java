@@ -3,6 +3,7 @@ package it.finance.sb.service;
 import it.finance.sb.exception.UserLoginException;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
+import it.finance.sb.utility.PasswordUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +28,7 @@ class BaseServiceTest {
 
     @Test
     void testIsUserLoggedIn_shouldReturnTrueWhenUserSet() {
-        baseService.setCurrentUser(new User("Test", 30, Gender.OTHER));
+        baseService.setCurrentUser(new User("Test", 30, Gender.OTHER, PasswordUtils.hash("Password")));
         assertTrue(baseService.isUserLoggedIn());
     }
 
@@ -38,7 +39,7 @@ class BaseServiceTest {
 
     @Test
     void testRequireLoggedInUser_shouldNotThrowWhenUserPresent() {
-        baseService.setCurrentUser(new User("Test", 30, Gender.OTHER));
+        baseService.setCurrentUser(new User("Test", 30, Gender.OTHER,PasswordUtils.hash("Password")));
         assertDoesNotThrow(baseService::requireLoggedInUser);
     }
 }

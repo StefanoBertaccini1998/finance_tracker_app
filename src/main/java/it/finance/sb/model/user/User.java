@@ -24,6 +24,8 @@ public class User {
     private final Map<TransactionType, TransactionList> transactionLists = new EnumMap<>(TransactionType.class);
     private List<AccountInterface> accountList;
     private Set<String> categorySet;
+    @Sanitize(notBlank = true, /*minLength = 6,*/ maxLength = 100)
+    private String password;
 
     /**
      * Instantiates a new User.
@@ -32,7 +34,7 @@ public class User {
      * @param age    the age
      * @param gender the gender
      */
-    public User(String name, int age, Gender gender) {
+    public User(String name, int age, Gender gender, String password) {
         this.userId = ++idCounter;
         this.name = name;
         this.age = age;
@@ -42,6 +44,7 @@ public class User {
         }
         this.categorySet = new HashSet<>(List.of("FOOD", "UTILITIES", "TRANSPORT"));
         accountList = new ArrayList<>();
+        this.password = password;
     }
 
     /**
@@ -112,7 +115,7 @@ public class User {
      *
      * @return the transaction lists
      */
-    public  Map<TransactionType, TransactionList> getTransactionLists() {
+    public Map<TransactionType, TransactionList> getTransactionLists() {
         return Collections.unmodifiableMap(transactionLists);
     }
 
@@ -178,6 +181,23 @@ public class User {
      */
     public void addTransaction(AbstractTransaction transaction) {
         this.transactionLists.get(transaction.getType()).addTransaction(transaction);
+    }
+
+    /**
+     * Get password.
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     * Set password.
+     *
+     * @param password the transaction
+     */
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     /**

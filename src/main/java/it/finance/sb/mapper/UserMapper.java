@@ -33,6 +33,7 @@ public class UserMapper {
                 user.getName(),
                 user.getAge(),
                 user.getGender(),
+                user.getPassword(),
                 List.copyOf(user.getCategorySet()),
                 List.copyOf(user.getAccountList()),
                 flattened
@@ -46,7 +47,7 @@ public class UserMapper {
      * @return the user
      */
     public static User fromSnapshot(UserSnapshot snapshot) {
-        User user = new User(snapshot.name(), snapshot.age(), snapshot.gender());
+        User user = new User(snapshot.name(), snapshot.age(), snapshot.gender(), snapshot.password());
 
         snapshot.categories().forEach(user::addCategory);
         snapshot.accounts().forEach(user::addAccount);

@@ -5,10 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.mapper.UserSnapshot;
+import it.finance.sb.utility.EncryptionUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -48,8 +51,15 @@ public class UserMementoManager {
         Objects.requireNonNull(snapshot, "UserSnapshot cannot be null.");
         String filename = sanitizeFileName(snapshot.name()) + JSON;
         Path filePath = Path.of(SAVE_DIR, filename);
-        mapper.writeValue(filePath.toFile(), snapshot);
-        logger.info(()->"[UserMementoManager] Saved snapshot: " + filePath);
+
+        String json = mapper.writeValueAsString(snapshot);
+        try {
+            String encrypted = EncryptionUtils.encrypt(json);
+            Files.writeString(filePath, encrypted);
+            logger.info(() -> "[UserMementoManager] Encrypted and saved snapshot: " + filePath);
+        } catch (GeneralSecurityException e) {
+            throw new IOException("Encryption failed", e);
+        }
     }
 
 
@@ -64,12 +74,20 @@ public class UserMementoManager {
         String filename = sanitizeFileName(username) + JSON;
         Path filePath = Path.of(SAVE_DIR, filename);
         File file = filePath.toFile();
+
         if (!file.exists()) {
-            logger.warning(()->"[UserMementoManager] File not found: " + filePath);
+            logger.warning(() -> "[UserMementoManager] File not found: " + filePath);
             return Optional.empty();
         }
-        logger.info(()->"[UserMementoManager] Loading snapshot: " + filePath);
-        return Optional.of(mapper.readValue(file, UserSnapshot.class));
+
+        try {
+            String encrypted = Files.readString(filePath);
+            String decrypted = EncryptionUtils.decrypt(encrypted);
+            logger.info(() -> "[UserMementoManager] Decrypted and loaded snapshot: " + filePath);
+            return Optional.of(mapper.readValue(decrypted, UserSnapshot.class));
+        } catch (GeneralSecurityException e) {
+            throw new IOException("Decryption failed", e);
+        }
     }
 
     /**
