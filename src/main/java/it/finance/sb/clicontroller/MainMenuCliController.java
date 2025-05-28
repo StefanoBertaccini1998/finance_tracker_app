@@ -1,6 +1,7 @@
 package it.finance.sb.clicontroller;
 
 import it.finance.sb.exception.UserCancelledException;
+import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.user.User;
 import it.finance.sb.service.AccountService;
 import it.finance.sb.service.FileIOService;
@@ -21,7 +22,7 @@ import java.util.logging.Logger;
 public class MainMenuCliController {
 
     public static final String RETURNING_TO_MAIN_MENU = " Returning to main menu.";
-    private final Logger logger;
+    private static final Logger logger = LoggerFactory.getSafeLogger(MainMenuCliController.class);
     private final UserMenuCliController userMenuCliController;
     private final AccountMenuCliController accountMenuCliController;
     private final TransactionMenuCliController transactionMenuCliController;
@@ -38,21 +39,18 @@ public class MainMenuCliController {
      * @param accountService     the account service
      * @param transactionService the transaction service
      * @param fileIOService      the file import/export service
-     * @param logger             the logging utility
      */
     public MainMenuCliController(
             UserService userService,
             MementoService mementoService,
             AccountService accountService,
             TransactionService transactionService,
-            FileIOService fileIOService,
-            Logger logger
+            FileIOService fileIOService
     ) {
-        this.logger = logger;
         this.mementoService = mementoService;
 
-        this.userMenuCliController = new UserMenuCliController(userService, mementoService, logger);
-        this.csvMenuCliController = new CsvMenuCliController(fileIOService, logger);
+        this.userMenuCliController = new UserMenuCliController(userService, mementoService);
+        this.csvMenuCliController = new CsvMenuCliController(fileIOService);
         this.accountMenuCliController = new AccountMenuCliController(accountService);
         this.transactionMenuCliController = new TransactionMenuCliController(transactionService); // user will be set later
     }
@@ -62,7 +60,7 @@ public class MainMenuCliController {
      */
     public void run() throws UserCancelledException {
         System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
-
+        logger.info("Main menu started");
         // Step 1: Login user
         userMenuCliController.show();
         this.currentUser = userMenuCliController.getCurrentUser();

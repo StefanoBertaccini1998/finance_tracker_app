@@ -30,7 +30,7 @@ public class MementoService {
         try {
             UserSnapshot snapshot = UserMapper.toSnapshot(user);
             UserMementoManager.save(snapshot);
-            logger.info("[MementoService] User '" + user.getName() + "' saved successfully.");
+            logger.info("User '" + user.getName() + "' saved successfully.");
         } catch (Exception e) {
             throw new MementoException("Could not save user. Internal error.", e);
         }
@@ -74,10 +74,10 @@ public class MementoService {
     public boolean deleteUser(String username) {
         try {
             boolean deleted = UserMementoManager.delete(username);
-            logger.info(()->"[MementoService] Deleted user '" + username + "'");
+            logger.info(()->"Deleted user '" + username + "'");
             return deleted;
         } catch (Exception e) {
-            logger.log(Level.WARNING, "[MementoService] Failed to delete user '" + username + "'", e);
+            logger.log(Level.WARNING, "Failed to delete user '" + username + "'", e);
             return false;
         }
     }

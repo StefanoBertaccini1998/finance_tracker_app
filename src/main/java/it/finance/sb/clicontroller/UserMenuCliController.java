@@ -3,6 +3,7 @@ package it.finance.sb.clicontroller;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.MementoException;
 import it.finance.sb.exception.UserCancelledException;
+import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.user.Gender;
 import it.finance.sb.model.user.User;
 import it.finance.sb.service.MementoService;
@@ -17,44 +18,43 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * CLI controller responsible for user login, creation, and saving operations.
- * <p>
- * Provides a text-based interface to load existing users, create new users,
- * and persist user data using the Memento pattern.
- * </p>
+ * CLI controller responsible for user-related operations.
+ * Handles user login, user creation with password validation,
+ * and state persistence using the Memento pattern.
  */
 public class UserMenuCliController implements MenuCliController {
 
     public static final String OPERATION_CANCELLED = " Operation cancelled.";
     public static final String OPERATION_CANCELLED_BY_USER = "Operation cancelled by user.";
+
     private final UserService userService;
     private final MementoService mementoService;
-    private final Logger logger;
+    private static final Logger logger = LoggerFactory.getSafeLogger(UserMenuCliController.class);
 
     private User currentUser;
 
     /**
-     * Constructs the UserMenuCliController with the required services.
+     * Constructs the UserMenuCliController with required services.
      *
-     * @param userService    the user creation and authentication service
-     * @param mementoService the user snapshot (persistence) manager
-     * @param logger         the logging facility
+     * @param userService    handles user creation and current user context
+     * @param mementoService handles loading and saving of user snapshots
      */
-    public UserMenuCliController(UserService userService, MementoService mementoService, Logger logger) {
+    public UserMenuCliController(UserService userService, MementoService mementoService) {
         this.userService = userService;
         this.mementoService = mementoService;
-        this.logger = logger;
     }
 
     /**
-     * Displays the user login menu with options to load or create a user.
+     * Displays a CLI menu to load or create a user.
+     * Sets the selected or newly created user as current.
      *
-     * @throws UserCancelledException if the user exits the menu
+     * @throws UserCancelledException if user exits the menu explicitly
      */
     @Override
     public void show() throws UserCancelledException {
-        System.out.println(ConsoleStyle.section("🔐 Load or Create User"));
+        System.out.println(ConsoleStyle.section("\uD83D\uDD10 Load or Create User"));
 
+        // Repeat until a valid user is created or loaded
         while (currentUser == null) {
             int choice = ConsoleUtils.showMenu(
                     "User Login",
@@ -63,11 +63,13 @@ public class UserMenuCliController implements MenuCliController {
                     "Create new user"
             );
 
+            // Exit if user cancels
             if (choice == -1) {
                 System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
-                throw new UserCancelledException(); // exit entire flow if user cancels
+                throw new UserCancelledException();
             }
 
+            // Handle selected option
             switch (choice) {
                 case 1 -> loadUser();
                 case 2 -> createNewUser();
@@ -75,51 +77,61 @@ public class UserMenuCliController implements MenuCliController {
             }
         }
 
+        // Set the active user into the service context
         userService.setCurrentUser(currentUser);
     }
 
     /**
-     * Returns the currently loaded or created user.
+     * Returns the currently logged-in or created user.
      *
-     * @return the active {@link User}
+     * @return the active user
      */
     public User getCurrentUser() {
         return currentUser;
     }
 
     /**
-     * Loads a user from saved snapshots.
+     * Loads a saved user by listing available snapshots and prompting for password.
      */
     private void loadUser() {
+        logger.info("Started load user flow");
         try {
             List<String> savedUsers = mementoService.listUsers();
 
+            // No users saved, fallback to user creation
             if (savedUsers.isEmpty()) {
                 System.out.println(ConsoleStyle.warning("No saved users found. Let's create a new one."));
                 createNewUser();
                 return;
             }
 
+            // Let the user select a saved snapshot
             int selected = ConsoleUtils.showMenu("Select a saved user", savedUsers.toArray(new String[0]));
             if (selected == -1) {
                 System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
                 return;
             }
 
-            String enteredPassword = ConsoleUtils.prompt("Enter your password", true); // true = hide input
+            // Prompt for password (input hidden)
+            String enteredPassword = ConsoleUtils.prompt("Enter your password", true);
 
             Optional<User> loaded = mementoService.loadUser(savedUsers.get(selected - 1));
 
+            // Check if the user was loaded and validate the password
             if (loaded.isPresent()) {
+                logger.info("User loaded correctly in");
                 User user = loaded.get();
                 if (!user.getPassword().equals(PasswordUtils.hash(enteredPassword))) {
                     System.out.println(ConsoleStyle.error("Incorrect password."));
                     return;
                 }
+                //Set current user
                 currentUser = user;
+                logger.info("Completed load user flow");
                 System.out.println(ConsoleStyle.success("User loaded: " + currentUser.getName()));
             } else {
                 System.out.println(ConsoleStyle.error("Could not load the selected user. A new one will be created."));
+                logger.warning("User cannot be loaded");
                 createNewUser();
             }
 
@@ -135,33 +147,36 @@ public class UserMenuCliController implements MenuCliController {
     }
 
     /**
-     * Creates a new user by prompting the user for input.
+     * Prompts user for input, validates it, and creates a new user.
+     * Ensures password confirmation matches and persists the new user.
      */
     public void createNewUser() {
         System.out.println(ConsoleStyle.menuTitle("Create New User"));
-
+        logger.info("Started create new user flow");
         boolean completed = false;
         while (!completed) {
             try {
+                // Collect user details
                 String name = ConsoleUtils.prompt("Enter your name", false);
-
                 int age = Integer.parseInt(ConsoleUtils.prompt("Enter your age", false));
-
                 Gender gender = ConsoleUtils.selectEnum(Gender.class, "Select gender", false);
 
+                // Ask for password and confirmation
                 String password = ConsoleUtils.prompt("Set a password", true);
                 String confirmPassword = ConsoleUtils.prompt("Confirm password", true);
 
+                // Confirm passwords match
                 if (!password.equals(confirmPassword)) {
                     System.out.println(ConsoleStyle.error("Passwords do not match."));
                     continue;
                 }
 
+                // Create and save the user
                 currentUser = userService.create(name, age, gender, PasswordUtils.hash(password));
-
                 mementoService.saveUser(currentUser);
 
                 System.out.println(ConsoleStyle.success("User created and saved!"));
+                logger.info("Completed create new user flow");
                 completed = true;
             } catch (UserCancelledException e) {
                 System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
@@ -181,18 +196,4 @@ public class UserMenuCliController implements MenuCliController {
             }
         }
     }
-
-    /**
-     * Saves the current user state to disk using the memento service.
-     */
-    public void saveUser() {
-        try {
-            mementoService.saveUser(currentUser);
-            System.out.println(ConsoleStyle.success(" User saved."));
-        } catch (MementoException e) {
-            logger.log(Level.SEVERE, "Failed to save user", e);
-            System.out.println(ConsoleStyle.error(" Failed to save user."));
-        }
-    }
-
 }

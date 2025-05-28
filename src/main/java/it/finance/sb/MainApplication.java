@@ -16,33 +16,59 @@ import java.util.logging.Logger;
 
 /**
  * Main entry point of the FinanceTrack CLI application.
- * Initializes core services and launches the main controller.
+ * <p>
+ * This class is responsible for initializing all core components and services,
+ * including user management, transaction handling, account management,
+ * CSV import/export logic, memento state handling, and logging. Once the setup
+ * is complete, it delegates control to the main CLI menu controller.
+ * <p>
+ * The design applies several design patterns such as Factory, Memento,
+ * and Interface Segregation via custom IO interfaces.
  */
 public class MainApplication {
 
+    /**
+     * Launches the FinanceTrack CLI application.
+     *
+     * @param args CLI arguments (not used in this application)
+     * @throws UserCancelledException if the user exits the menu navigation explicitly
+     */
     public static void main(String[] args) throws UserCancelledException {
+        // Initialize a safe logger instance for the application
         Logger logger = LoggerFactory.getSafeLogger(MainApplication.class);
+        logger.info("Starting application...");
 
-        // === Core services ===
+        // Instantiate core domain services and dependencies
         UserService userService = new UserService();
         FinanceAbstractFactory factory = new DefaultFinanceFactory();
-        TransactionService transactionService = new TransactionService(userService,factory);
-        AccountService accountService = new AccountService(transactionService,factory);
+        TransactionService transactionService = new TransactionService(userService, factory);
+        AccountService accountService = new AccountService(transactionService, factory);
         MementoService mementoService = new MementoService();
-        ImporterI<AbstractTransaction> importer = new CsvImporter(factory);
-        WriterI<AbstractTransaction> writer = new CsvWriter<>("TransactionId,Type,Amount,From,To,Category,Reason,Date");
-        FileIOService fileIOService = new FileIOService(transactionService, userService, importer, writer);
 
-        // === Launch main CLI menu ===
+        // Configure CSV importer and writer with appropriate headers
+        ImporterI<AbstractTransaction> importer = new CsvImporter(factory);
+        WriterI<AbstractTransaction> writer = new CsvWriter<>(
+                "TransactionId,Type,Amount,From,To,Category,Reason,Date"
+        );
+
+        // Setup file I/O service combining importer and writer
+        FileIOService fileIOService = new FileIOService(
+                transactionService,
+                userService,
+                importer,
+                writer
+        );
+
+        // Launch the main CLI menu controller to handle user input
         MainMenuCliController mainMenu = new MainMenuCliController(
                 userService,
                 mementoService,
                 accountService,
                 transactionService,
-                fileIOService,
-                logger
+                fileIOService
         );
-
+        logger.info("Application configured correctly.");
         mainMenu.run();
+        logger.info("Closing application.");
     }
 }

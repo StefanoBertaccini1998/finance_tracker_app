@@ -34,7 +34,7 @@ public class UserService extends BaseService {
         InputSanitizer.validate(user);
         setCurrentUser(user);
 
-        logger.info(() -> String.format("[UserService] Created new user: name='%s', age=%d", user.getName(), age));
+        logger.info(() -> String.format("Created new user: name='%s', age=%d", user.getName(), age));
         return user;
     }
 
@@ -46,7 +46,7 @@ public class UserService extends BaseService {
      */
     public User delete(User user) {
         Objects.requireNonNull(user, "User cannot be null");
-        logger.info(() -> "[UserService] Deleted user: " + user.getName());
+        logger.info(() -> "Deleted user: " + user.getName());
         return user;
     }
 
@@ -73,7 +73,7 @@ public class UserService extends BaseService {
         }
 
         InputSanitizer.validate(user);
-        logger.info(() -> String.format("[UserService] Modified user: name='%s', age=%d", user.getName(), user.getAge()));
+        logger.info(() -> String.format("Modified user: name='%s', age=%d", user.getName(), user.getAge()));
         return user;
     }
 
@@ -97,12 +97,12 @@ public class UserService extends BaseService {
     public void addCategory(String category) throws UserLoginException {
         requireLoggedInUser();
         if (category == null || category.isBlank()) {
-            logger.warning("[UserService] Rejected blank category.");
+            logger.warning("Rejected blank category.");
             return;
         }
         if (!currentUser.isCategoryAllowed(category)) {
             currentUser.addCategory(category);
-            logger.info(() -> "[UserService] Added category: '" + category + "'");
+            logger.info(() -> "Added category: '" + category + "'");
         }
     }
 

@@ -74,10 +74,10 @@ public class FileIOService extends BaseService {
             }
 
             if (!errorLog.isEmpty()) {
-                logger.warning(() -> "[FileIOService] Some entries failed:\n" + String.join("\n", errorLog));
+                logger.warning(() -> "Some entries failed:\n" + String.join("\n", errorLog));
             }
 
-            logger.info(() -> "[FileIOService] Imported " + imported.size() + " transactions from: " + filePath);
+            logger.info(() -> "Imported " + imported.size() + " transactions from: " + filePath);
             return imported;
 
         } catch (DataValidationException | IOException e) {
@@ -96,7 +96,7 @@ public class FileIOService extends BaseService {
         try {
             List<AbstractTransaction> allTxs = transactionService.getAllTransactionsFlattened();
             transactionWriter.exportToFile(allTxs, outputPath);
-            logger.info(() -> "[FileIOService] Exported " + allTxs.size() + " transactions to: " + outputPath);
+            logger.info(() -> "Exported " + allTxs.size() + " transactions to: " + outputPath);
         } catch (Exception e) {
             throw new FileIOException("Failed to export transactions.", e);
         }
@@ -117,7 +117,7 @@ public class FileIOService extends BaseService {
         String category = tx.getCategory();
         if (category != null && !category.isBlank() && !getCurrentUser().isCategoryAllowed(category)) {
             userService.addCategory(category);
-            logger.info(() -> "[FileIOService] Added new category during import: " + category);
+            logger.info(() -> "Added new category during import: " + category);
         }
     }
 
@@ -129,9 +129,9 @@ public class FileIOService extends BaseService {
             try {
                 InputSanitizer.validate(account);
                 getCurrentUser().addAccount(account);
-                logger.info("[FileIOService] Auto-added account from import: " + account.getName());
+                logger.info("Auto-added account from import: " + account.getName());
             } catch (Exception e) {
-                logger.warning("[FileIOService] Failed to add auto-created account: " + e.getMessage());
+                logger.warning("Failed to add auto-created account: " + e.getMessage());
             }
         }
     }
@@ -146,7 +146,7 @@ public class FileIOService extends BaseService {
             getCurrentUser().addTransaction(tx);
         } catch (Exception e) {
             errorLog.add("❌ Skipped invalid transaction: " + e.getMessage());
-            logger.warning("[FileIOService] Skipped malformed transaction: " + e.getMessage());
+            logger.warning("Skipped malformed transaction: " + e.getMessage());
         }
     }
 }

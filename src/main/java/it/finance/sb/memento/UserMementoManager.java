@@ -33,7 +33,7 @@ public class UserMementoManager {
         File dir = new File(SAVE_DIR);
         if (!dir.exists()) {
             boolean created = dir.mkdirs();
-            if (created) logger.info("[UserMementoManager] Created directory: " + SAVE_DIR);
+            if (created) logger.info("Created directory: " + SAVE_DIR);
         }
     }
 
@@ -56,7 +56,7 @@ public class UserMementoManager {
         try {
             String encrypted = EncryptionUtils.encrypt(json,snapshot.name());
             Files.writeString(filePath, encrypted);
-            logger.info(() -> "[UserMementoManager] Encrypted and saved snapshot: " + filePath);
+            logger.info(() -> "Encrypted and saved snapshot: " + filePath);
         } catch (GeneralSecurityException e) {
             throw new IOException("Encryption failed", e);
         }
@@ -76,14 +76,14 @@ public class UserMementoManager {
         File file = filePath.toFile();
 
         if (!file.exists()) {
-            logger.warning(() -> "[UserMementoManager] File not found: " + filePath);
+            logger.warning(() -> "File not found: " + filePath);
             return Optional.empty();
         }
 
         try {
             String encrypted = Files.readString(filePath);
             String decrypted = EncryptionUtils.decrypt(encrypted,username);
-            logger.info(() -> "[UserMementoManager] Decrypted and loaded snapshot: " + filePath);
+            logger.info(() -> "Decrypted and loaded snapshot: " + filePath);
             return Optional.of(mapper.readValue(decrypted, UserSnapshot.class));
         } catch (GeneralSecurityException e) {
             throw new IOException("Decryption failed", e);
@@ -117,9 +117,9 @@ public class UserMementoManager {
         File file = new File(SAVE_DIR, filename);
         boolean deleted = !(!file.exists() || !file.delete());
         if (deleted) {
-            logger.info(()->"[UserMementoManager] Deleted snapshot: " + filename);
+            logger.info(()->"Deleted snapshot: " + filename);
         } else {
-            logger.warning(()->"[UserMementoManager] Failed to delete or not found: " + filename);
+            logger.warning(()->"Failed to delete or not found: " + filename);
         }
         return deleted;
     }

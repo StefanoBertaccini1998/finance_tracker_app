@@ -4,6 +4,7 @@ import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.FileIOException;
 import it.finance.sb.exception.UserCancelledException;
 import it.finance.sb.exception.UserLoginException;
+import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.user.User;
 import it.finance.sb.service.FileIOService;
@@ -27,18 +28,16 @@ import java.util.logging.Logger;
 public class CsvMenuCliController implements MenuCliController {
 
     private final FileIOService fileIOService;
-    private final Logger logger;
+    private static final Logger logger = LoggerFactory.getSafeLogger(CsvMenuCliController.class);
 
 
     /**
      * Constructs a new {@code CsvMenuCliController} with the given services.
      *
      * @param fileIOService the service used to import and export transactions
-     * @param logger        the logger for reporting I/O errors and user issues
      */
-    public CsvMenuCliController(FileIOService fileIOService, Logger logger) {
+    public CsvMenuCliController(FileIOService fileIOService) {
         this.fileIOService = fileIOService;
-        this.logger = logger;
     }
 
     /**
@@ -61,15 +60,19 @@ public class CsvMenuCliController implements MenuCliController {
      * Asks the user for the path and additional import options.
      */
     private void importTransactions() {
+        logger.info("Started import transaction flow");
         try {
+            //Prompt for path -> auto create account -> skip error
             Path path = Path.of(ConsoleUtils.prompt("Enter CSV path", false));
             boolean autoCreate = ConsoleUtils.prompt("Auto-create missing accounts? (y/n)", false).equalsIgnoreCase("y");
             boolean skipErrors = ConsoleUtils.prompt("Skip errors? (y/n)", false).equalsIgnoreCase("y");
 
+            //Prompt for path -> auto create account -> skip error
             List<AbstractTransaction> imported = fileIOService.importTransactions(path, autoCreate, skipErrors);
             System.out.println(ConsoleStyle.success("Transactions imported successfully."));
+            //Show imported transaction
             TransactionPrinter.printTransactions(imported);
-
+            logger.info("Completed import transaction flow");
         } catch (UserCancelledException e) {
             System.out.println(ConsoleStyle.back("Import cancelled by user."));
         } catch (UserLoginException e) {
@@ -79,6 +82,7 @@ public class CsvMenuCliController implements MenuCliController {
             logger.log(Level.SEVERE, "Import failed during file parsing", e);
             System.out.println(ConsoleStyle.error("The file format appears invalid. Please check the CSV content and structure."));
 
+            //Catch the error line from the custom exception
             List<String> errors = e.getErrorLog();
             if (errors != null && !errors.isEmpty()) {
                 System.out.println(ConsoleStyle.warning("Details of rows skipped or failed before interruption:"));
@@ -102,10 +106,12 @@ public class CsvMenuCliController implements MenuCliController {
      * Handles the export of transactions to a user-specified CSV file path.
      */
     private void exportTransactions() {
+        logger.info("Started export transaction flow");
         try {
             Path path = Path.of(ConsoleUtils.prompt("Enter output CSV file path", false));
             fileIOService.exportTransactions(path);
             System.out.println(ConsoleStyle.success("Transactions successfully exported to: " + path));
+            logger.info("Completed export transaction flow");
         } catch (UserCancelledException e) {
             System.out.println(ConsoleStyle.back("Export cancelled by user."));
         } catch (UserLoginException e) {
@@ -141,6 +147,12 @@ public class CsvMenuCliController implements MenuCliController {
         }
     }
 
+    /**
+     * Sets the current user context for the controller.
+     * This is required before performing any import/export actions.
+     *
+     * @param user the logged-in user
+     */
     public void setUser(User user) {
         this.fileIOService.setCurrentUser(user);
     }

@@ -43,7 +43,7 @@ public class AccountService extends BaseService {
             AccountInterface account = factory.createAccount(type, name, balance);
             currentUser.addAccount(account);
 
-            logger.info(() -> String.format("[AccountService] Account created for user='%s' (type=%s)",
+            logger.info(() -> String.format("Account created for user='%s' (type=%s)",
                     currentUser.getName(), type));
             return account;
 
@@ -68,7 +68,7 @@ public class AccountService extends BaseService {
             transactionService.removeTransactionsForAccount(account);
             currentUser.removeAccount(account);
 
-            logger.info(() -> String.format("[AccountService] Account deleted (ID=%d)", account.getAccountId()));
+            logger.info(() -> String.format("Account deleted (ID=%d)", account.getAccountId()));
             return account;
 
         } catch (Exception e) {
@@ -104,7 +104,7 @@ public class AccountService extends BaseService {
 
             InputSanitizer.validate(account);
 
-            logger.info(() -> String.format("[AccountService] Account modified (ID=%d)", account.getAccountId()));
+            logger.info(() -> String.format("Account modified (ID=%d)", account.getAccountId()));
             return account;
 
         } catch (Exception e) {
