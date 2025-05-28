@@ -15,7 +15,7 @@ import java.util.Base64;
 
 public class EncryptionUtils {
 
-    private static final String TRANSFORMATION = "AES/CBC/PKCS5Padding";
+    private static final String TRANSFORMATION = "AES/GCM/NoPadding";
     private static final String ALGORITHM = "AES";
     private static final int AES_KEY_SIZE = 16; // 128 bits
     private static final int IV_SIZE = 16;
