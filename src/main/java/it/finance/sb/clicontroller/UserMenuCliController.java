@@ -52,7 +52,7 @@ public class UserMenuCliController implements MenuCliController {
      */
     @Override
     public void show() throws UserCancelledException {
-        System.out.println(ConsoleStyle.section("\uD83D\uDD10 Load or Create User"));
+        System.out.println(ConsoleStyle.section("Load or Create User"));
 
         // Repeat until a valid user is created or loaded
         while (currentUser == null) {

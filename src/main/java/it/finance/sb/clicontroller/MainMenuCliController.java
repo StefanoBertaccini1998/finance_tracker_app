@@ -23,6 +23,8 @@ import java.util.logging.Logger;
 public class MainMenuCliController {
 
     public static final String RETURNING_TO_MAIN_MENU = " Returning to main menu.";
+
+    public static final boolean ENABLED = Boolean.parseBoolean(System.getProperty("emoji.enabled", "false"));
     private static final Logger logger = LoggerFactory.getSafeLogger(MainMenuCliController.class);
     private final UserMenuCliController userMenuCliController;
     private final AccountMenuCliController accountMenuCliController;
@@ -56,12 +58,13 @@ public class MainMenuCliController {
         this.transactionMenuCliController = new TransactionMenuCliController(transactionService); // user will be set later
     }
 
+
     /**
      * Starts the main application flow: login, menu, exit.
      */
     public void run() {
         try {
-            System.out.println(ConsoleStyle.header("Welcome to 💸 FinanceTrack!"));
+            System.out.println(ConsoleStyle.header("Welcome to " + (ENABLED ? "💸":"")+" FinanceTrack!"));
             logger.info("Main menu started");
 
             // Step 1: Login user
@@ -91,7 +94,7 @@ public class MainMenuCliController {
                     mementoService.saveUser(currentUser);
                     System.out.println(ConsoleStyle.success("Progress auto-saved before shutdown."));
                 } catch (Exception ex) {
-                    System.out.println(ConsoleStyle.error("❌ Failed to auto-save user: " + ex.getMessage()));
+                    System.out.println(ConsoleStyle.error("Failed to auto-save user: " + ex.getMessage()));
                     logger.severe("Auto-save failed: " + ex.getMessage());
                 }
             }
