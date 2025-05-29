@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  * and logs relevant information using {@link Logger}.
  * Provides exception shielding and safe user interactions.
  */
-public class CsvMenuCliController implements MenuCliController {
+public class CsvMenuCliController extends MenuCliController {
 
     private final FileIOService fileIOService;
     private static final Logger logger = LoggerFactory.getSafeLogger(CsvMenuCliController.class);
@@ -123,27 +123,6 @@ public class CsvMenuCliController implements MenuCliController {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected export error", e);
             System.out.println(ConsoleStyle.error("An unexpected error occurred during export. Please try again."));
-        }
-    }
-
-    /**
-     * Displays a generic menu loop to the user and dispatches actions accordingly.
-     *
-     * @param title   the title of the menu
-     * @param options the list of options to show
-     * @param actions the actions corresponding to each option
-     * @throws UserCancelledException if the user exits the menu
-     */
-    private void menuLoop(String title, String[] options, Runnable... actions) throws UserCancelledException {
-        boolean running = true;
-        while (running) {
-            int choice = ConsoleUtils.showMenu(title, false, options);
-            if (choice == -1) return;
-            if (choice > actions.length || actions[choice - 1] == null) {
-                running = false;
-            } else {
-                actions[choice - 1].run();
-            }
         }
     }
 

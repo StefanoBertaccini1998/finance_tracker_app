@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  * Provides options to view, create, update, and delete accounts.
  * Delegates business logic to AccountService and handles exception shielding.
  */
-public class AccountMenuCliController implements MenuCliController {
+public class AccountMenuCliController extends MenuCliController {
 
     public static final String OPERATION_CANCELLED = "Operation cancelled by user.";
     public static final String SESSION_ERROR = "Session error: ";
@@ -113,9 +113,6 @@ public class AccountMenuCliController implements MenuCliController {
         } catch (UserCancelledException e) {
             System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
             logger.fine("Account update cancelled by user.");
-        } catch (DataValidationException e) {
-            System.out.println(ConsoleStyle.error("Validation error: " + e.getMessage()));
-            logger.warning("Validation error during update: " + e.getMessage());
         } catch (AccountOperationException e) {
             System.out.println(ConsoleStyle.error("Could not update account: " + e.getMessage()));
             logger.warning("Operation error during account update: " + e.getMessage());
@@ -186,21 +183,6 @@ public class AccountMenuCliController implements MenuCliController {
             } catch (NumberFormatException e) {
                 System.out.println(ConsoleStyle.error("Invalid index."));
             }
-        }
-    }
-
-    /**
-     * Generic menu loop for CLI navigation.
-     *
-     * @param title   the menu title
-     * @param options the menu options
-     * @param actions the corresponding actions
-     */
-    private void menuLoop(String title, String[] options, Runnable... actions) throws UserCancelledException {
-        while (true) {
-            int choice = ConsoleUtils.showMenu(title, false, options);
-            if (choice == -1 || choice > actions.length || actions[choice - 1] == null) return;
-            actions[choice - 1].run();
         }
     }
 

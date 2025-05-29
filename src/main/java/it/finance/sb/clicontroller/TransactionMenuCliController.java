@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  * and uses {@link ConsoleUtils} to prompt user input.
  * Transaction types are dynamically handled via {@link TransactionType}.
  */
-public class TransactionMenuCliController implements MenuCliController {
+public class TransactionMenuCliController extends MenuCliController {
 
     public static final String OPERATION_CANCELLED_BY_USER = "Operation cancelled by user.";
     public static final String UNEXPECTED_ERROR = "Unexpected error: ";
@@ -308,26 +308,6 @@ public class TransactionMenuCliController implements MenuCliController {
         }
     }
 
-    /**
-     * Generic method for displaying a menu loop.
-     *
-     * @param title   the menu title
-     * @param options the options to display
-     * @param actions the actions corresponding to each menu entry
-     * @throws UserCancelledException if the user cancels or exits
-     */
-    private void menuLoop(String title, String[] options, Runnable... actions) throws UserCancelledException {
-        boolean running = true;
-        while (running) {
-            int choice = ConsoleUtils.showMenu(title, false, options);
-            if (choice == -1) return;
-            if (choice > actions.length || actions[choice - 1] == null) {
-                running = false;
-            } else {
-                actions[choice - 1].run();
-            }
-        }
-    }
 
     /**
      * Sets the current user context for the controller.

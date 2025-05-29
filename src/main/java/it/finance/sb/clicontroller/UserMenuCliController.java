@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  * Handles user login, user creation with password validation,
  * and state persistence using the Memento pattern.
  */
-public class UserMenuCliController implements MenuCliController {
+public class UserMenuCliController extends MenuCliController {
 
     public static final String OPERATION_CANCELLED = " Operation cancelled.";
     public static final String OPERATION_CANCELLED_BY_USER = "Operation cancelled by user.";
@@ -54,28 +54,14 @@ public class UserMenuCliController implements MenuCliController {
     public void show() throws UserCancelledException {
         System.out.println(ConsoleStyle.section("Load or Create User"));
 
-        // Repeat until a valid user is created or loaded
-        while (currentUser == null) {
-            int choice = ConsoleUtils.showMenu(
-                    "User Login",
-                    false,
-                    "Load existing user",
-                    "Create new user"
-            );
-
-            // Exit if user cancels
-            if (choice == -1) {
-                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
-                throw new UserCancelledException();
-            }
-
-            // Handle selected option
-            switch (choice) {
-                case 1 -> loadUser();
-                case 2 -> createNewUser();
-                default -> System.out.println(ConsoleStyle.warning(" Invalid option selected."));
-            }
-        }
+        menuLoop("User Login",
+                new String[]{
+                        "Load existing user",
+                        "Create new user",
+                        "Back"
+                },
+                this::loadUser,
+                this::createNewUser);
 
         // Set the active user into the service context
         userService.setCurrentUser(currentUser);
@@ -197,16 +183,4 @@ public class UserMenuCliController implements MenuCliController {
         }
     }
 
-    /**
-     * Saves the current user state to disk using the memento service.
-     */
-    public void saveUser() {
-        try {
-            mementoService.saveUser(currentUser);
-            System.out.println(ConsoleStyle.success(" User saved."));
-        } catch (MementoException e) {
-            logger.log(Level.SEVERE, "Failed to save user", e);
-            System.out.println(ConsoleStyle.error(" Failed to save user."));
-        }
-    }
 }
