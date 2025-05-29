@@ -1,6 +1,5 @@
 package it.finance.sb.service;
 
-import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.MementoException;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.mapper.UserMapper;

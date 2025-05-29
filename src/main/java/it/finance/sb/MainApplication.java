@@ -1,7 +1,6 @@
 package it.finance.sb;
 
 import it.finance.sb.clicontroller.MainMenuCliController;
-import it.finance.sb.exception.UserCancelledException;
 import it.finance.sb.factory.DefaultFinanceFactory;
 import it.finance.sb.factory.FinanceAbstractFactory;
 import it.finance.sb.io.CsvImporter;
