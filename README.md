@@ -213,12 +213,14 @@ cd finance_tracker_app
 mvn clean compile
 
 # Run Bash
-mvn exec:java -Dexec.mainClass="it.finance.sb.MainApplication" -Demoji.enabled=true
+mvn exec:java -Dexec.mainClass="it.finance.sb.MainApplication"
 or
 
 # Run CMD / Powershell
-mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java "-Dexec.mainClass=it.finance.sb.MainApplication" "-Demoji.enabled=true"
+mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java "-Dexec.mainClass=it.finance.sb.MainApplication"
 
+# Optional
+add: -Demoji.enabled=true to enable emojy on the app 
 
 ```
 ### ⚠️ Terminal Compatibility Tips
