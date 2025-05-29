@@ -1,5 +1,6 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.MementoException;
 import it.finance.sb.mapper.UserMapper;
 import it.finance.sb.mapper.UserSnapshot;
 import it.finance.sb.memento.UserMementoManager;
@@ -43,7 +44,7 @@ class MementoServiceTest {
 
     @Test
     void testSaveUser_failure() {
-        assertThrows(IllegalArgumentException.class, () -> mementoService.saveUser(null));
+        assertThrows(MementoException.class, () -> mementoService.saveUser(null));
     }
 
     @Test
@@ -67,7 +68,7 @@ class MementoServiceTest {
 
     @Test
     void testLoadUser_invalidInput() {
-        assertThrows(IllegalArgumentException.class, () -> mementoService.loadUser(" "));
+        assertThrows(MementoException.class, () -> mementoService.loadUser(" "));
     }
 
     @Test

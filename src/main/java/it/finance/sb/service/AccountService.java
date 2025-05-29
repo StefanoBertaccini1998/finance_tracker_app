@@ -31,7 +31,7 @@ public class AccountService extends BaseService {
      * Creates and registers a new account.
      */
     public AccountInterface create(AccounType type, String name, Double balance)
-            throws AccountOperationException, DataValidationException, UserLoginException {
+            throws AccountOperationException, UserLoginException, DataValidationException {
 
         requireLoggedInUser();
 
@@ -80,7 +80,7 @@ public class AccountService extends BaseService {
      * Modifies an existing account's name, type, or balance.
      */
     public AccountInterface modify(AccountInterface account, AccounType type, String newName, Double newBalance)
-            throws DataValidationException, UserLoginException, AccountOperationException {
+            throws UserLoginException, AccountOperationException{
 
         requireLoggedInUser();
 
@@ -107,7 +107,7 @@ public class AccountService extends BaseService {
             logger.info(() -> String.format("Account modified (ID=%d)", account.getAccountId()));
             return account;
 
-        } catch (Exception e) {
+        } catch (DataValidationException e) {
             throw new AccountOperationException("Failed to modify account.", e);
         }
     }

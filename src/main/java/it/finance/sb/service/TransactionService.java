@@ -42,7 +42,7 @@ public class TransactionService extends BaseService {
 
         if (amount <= 0) {
             logger.warning(() -> "Rejected transaction with non-positive amount: " + amount);
-            throw new TransactionOperationException("Amount must be greater than 0.");
+            throw new DataValidationException("Amount must be greater than 0.");
         }
         if (fromAccount != null && fromAccount.getBalance() < amount) {
             logger.warning("Insufficient funds in source account: " + fromAccount.getName());
@@ -104,6 +104,7 @@ public class TransactionService extends BaseService {
                                       AccountInterface newTo, AccountInterface newFrom)
             throws TransactionOperationException, UserLoginException {
 
+        requireLoggedInUser();
         if (original == null) throw new TransactionOperationException("Original transaction is null.");
 
         double finalAmount = Optional.ofNullable(newAmount).orElse(original.getAmount());

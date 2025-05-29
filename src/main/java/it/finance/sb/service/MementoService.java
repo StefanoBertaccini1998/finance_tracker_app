@@ -1,11 +1,12 @@
 package it.finance.sb.service;
 
+import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.MementoException;
+import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.mapper.UserMapper;
 import it.finance.sb.mapper.UserSnapshot;
-import it.finance.sb.model.user.User;
 import it.finance.sb.memento.UserMementoManager;
-import it.finance.sb.logging.LoggerFactory;
+import it.finance.sb.model.user.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +27,6 @@ public class MementoService {
      * @throws MementoException the memento exception
      */
     public void saveUser(User user) throws MementoException {
-        if (user == null) throw new IllegalArgumentException("Cannot save null user.");
         try {
             UserSnapshot snapshot = UserMapper.toSnapshot(user);
             UserMementoManager.save(snapshot);
@@ -45,7 +45,7 @@ public class MementoService {
      */
     public Optional<User> loadUser(String username) throws MementoException {
         if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("Username cannot be null or blank.");
+            throw new MementoException("Username cannot be null or blank.");
         }
 
         try {
@@ -74,7 +74,7 @@ public class MementoService {
     public boolean deleteUser(String username) {
         try {
             boolean deleted = UserMementoManager.delete(username);
-            logger.info(()->"Deleted user '" + username + "'");
+            logger.info(() -> "Deleted user '" + username + "'");
             return deleted;
         } catch (Exception e) {
             logger.log(Level.WARNING, "Failed to delete user '" + username + "'", e);
