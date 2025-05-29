@@ -48,3 +48,8 @@ TransactionId,Type,Amount,From,To,Category,Reason,Date
 0,MOVEMENT,1600,EmergencyFund,MainBank,Used during emergency,1720176000000
 0,EXPENSE,65,MainBank,,Food,Groceries,1720262400000
 0,EXPENSE,55,MainBank,,Transport,Taxi,1720348800000
+0,EXPENSE,,MainBank,,Food,Missing amount,1720435200000
+0,EXPENSE,-150,MainBank,,ErrorCategory,Negative amount,1720521600000
+0,,100,MainBank,,Unknown,Missing type,1720608000000
+0,MOVEMENT,300,,,MissingAccounts,Both accounts missing,1720694400000
+0,INCOME,400,,,,MissingToAccount,1720780800000

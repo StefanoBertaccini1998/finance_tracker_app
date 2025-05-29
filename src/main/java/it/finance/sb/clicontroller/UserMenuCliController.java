@@ -54,18 +54,35 @@ public class UserMenuCliController extends MenuCliController {
     public void show() throws UserCancelledException {
         System.out.println(ConsoleStyle.section("Load or Create User"));
 
-        menuLoop("User Login",
-                new String[]{
-                        "Load existing user",
-                        "Create new user",
-                        "Back"
-                },
-                this::loadUser,
-                this::createNewUser);
+        // Repeat until a valid user is created or loaded
+        while (currentUser == null) {
+            int choice = ConsoleUtils.showMenu(
+                    "User Login",
+                    false,
+                    "Load existing user",
+                    "Create new user",
+                    "Close"
+            );
+
+            // Exit if user cancels
+            if (choice == -1) {
+                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
+                throw new UserCancelledException();
+            }
+
+            // Handle selected option
+            switch (choice) {
+                case 1 -> loadUser();
+                case 2 -> createNewUser();
+                case 3 -> throw new UserCancelledException();
+                default -> System.out.println(ConsoleStyle.warning(" Invalid option selected."));
+            }
+        }
 
         // Set the active user into the service context
         userService.setCurrentUser(currentUser);
     }
+
 
     /**
      * Returns the currently logged-in or created user.

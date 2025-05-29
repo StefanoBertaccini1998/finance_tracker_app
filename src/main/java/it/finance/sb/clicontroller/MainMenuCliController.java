@@ -3,13 +3,8 @@ package it.finance.sb.clicontroller;
 import it.finance.sb.exception.UserCancelledException;
 import it.finance.sb.logging.LoggerFactory;
 import it.finance.sb.model.user.User;
-import it.finance.sb.service.AccountService;
-import it.finance.sb.service.FileIOService;
-import it.finance.sb.service.MementoService;
-import it.finance.sb.service.TransactionService;
-import it.finance.sb.service.UserService;
+import it.finance.sb.service.*;
 import it.finance.sb.utility.ConsoleStyle;
-import it.finance.sb.utility.ConsoleUtils;
 
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
@@ -20,7 +15,7 @@ import java.util.logging.Logger;
  * This controller loads the user, then delegates to account, transaction, and CSV menus.
  * It also allows saving user state before exiting.
  */
-public class MainMenuCliController {
+public class MainMenuCliController extends MenuCliController{
 
     public static final String RETURNING_TO_MAIN_MENU = " Returning to main menu.";
 
@@ -78,11 +73,8 @@ public class MainMenuCliController {
 
             // Step 3: Show main menu
             showMainMenu();
-
-            // Step 4: Exit
-            System.out.println(ConsoleStyle.info("Thank you for using FinanceTrack!"));
         } catch (UserCancelledException e) {
-            System.out.println(ConsoleStyle.back("Exited by user."));
+            System.out.println(ConsoleStyle.back("Closing the application"));
             logger.info("User cancelled operation.");
         } catch (NoSuchElementException | IllegalStateException e) {
             System.out.println(ConsoleStyle.error("Session interrupted. Are you exiting with Ctrl+C?"));
@@ -102,13 +94,15 @@ public class MainMenuCliController {
             System.out.println(ConsoleStyle.error("Unexpected fatal error."));
             logger.log(Level.SEVERE, "Unhandled error in MainMenuCliController.run()", e);
         }
+        // Step 4: Exit
+        System.out.println(ConsoleStyle.info("Thank you for using FinanceTrack!"));
     }
 
     /**
      * Displays the main application menu.
      */
     private void showMainMenu() throws UserCancelledException {
-        menuLoop(
+        menuLoop("Main Menu",
                 new String[]{
                         "Manage Accounts",
                         "Manage Transactions",
@@ -170,17 +164,8 @@ public class MainMenuCliController {
         }
     }
 
-    /**
-     * Generic method for displaying a menu and executing related actions.
-     *
-     * @param options menu options
-     * @param actions corresponding action handlers
-     */
-    private void menuLoop(String[] options, Runnable... actions) throws UserCancelledException {
-        while (true) {
-            int choice = ConsoleUtils.showMenu("Main Menu", false, options);
-            if (choice == -1 || choice > actions.length || actions[choice - 1] == null) return;
-            actions[choice - 1].run();
-        }
+    @Override
+    void show() {
+        //Not implemented
     }
 }
