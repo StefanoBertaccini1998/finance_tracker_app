@@ -14,7 +14,6 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**

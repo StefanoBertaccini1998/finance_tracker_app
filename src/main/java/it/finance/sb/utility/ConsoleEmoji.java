@@ -16,4 +16,8 @@ public class ConsoleEmoji {
     public static final String SECTION = ENABLED ? "🔷" : "[*]";
     public static final String MENU = ENABLED ? "🔹" : "[MENU]";
     public static final String INPUT = ENABLED ? "👉" : ">";
+
+    private ConsoleEmoji() {
+        throw new IllegalStateException("Utility class");
+    }
 }

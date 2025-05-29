@@ -31,9 +31,8 @@ public class MainApplication {
      * Launches the FinanceTrack CLI application.
      *
      * @param args CLI arguments (not used in this application)
-     * @throws UserCancelledException if the user exits the menu navigation explicitly
      */
-    public static void main(String[] args) throws UserCancelledException {
+    public static void main(String[] args) {
         // Initialize a safe logger instance for the application
         Logger logger = LoggerFactory.getSafeLogger(MainApplication.class);
         logger.info("Starting application...");
