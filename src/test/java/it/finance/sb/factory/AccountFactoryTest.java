@@ -1,12 +1,9 @@
 package it.finance.sb.factory;
 
 import it.finance.sb.model.account.AccounType;
-import it.finance.sb.model.account.Account;
 import it.finance.sb.model.account.AccountInterface;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
