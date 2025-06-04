@@ -39,29 +39,32 @@ public class AccountMenuCliController extends MenuCliController {
         this.accountService = accountService;
     }
 
-    /**
-     * Displays the main account menu with all available operations.
-     */
+    /* Template overrides */
     @Override
-    public void show() throws UserCancelledException {
-        menuLoop("Account Menu",
-                new String[]{"View Accounts", "Create Account", "Update Account", "Delete Account", "Back"},
-                this::displayAccounts,
-                this::createAccount,
-                this::updateAccount,
-                this::deleteAccount,
-                null);
+    protected String title() {
+        return "Account Menu";
+    }
+
+    @Override
+    protected List<MenuItem> menuItems() {
+        return List.of(
+                new MenuItem("View Accounts", this::displayAccounts),
+                new MenuItem("Create Account", this::createAccount),
+                new MenuItem("Update Account", this::updateAccount),
+                new MenuItem("Delete Account", this::deleteAccount),
+                new MenuItem("Back", this::requestClose)          // no-op exits renderLoop()
+        );
     }
 
     /**
      * Displays all accounts associated with the current user.
      */
     private void displayAccounts() {
-        logger.info("Started display accounts");
         List<AccountInterface> accounts = accountService.getAllAccount();
         AccountPrinter.printAccounts(accounts);
-        logger.info(()->"Displayed " + accounts.size() + " accounts.");
+        logger.info(() -> "Displayed " + accounts.size() + " accounts");
     }
+
 
     /**
      * Prompts user for account details and creates a new account.
@@ -158,32 +161,11 @@ public class AccountMenuCliController extends MenuCliController {
      * @return the selected account
      * @throws UserCancelledException if user cancels input
      */
-    private AccountInterface selectAccount(String label) throws UserCancelledException, AccountOperationException {
-        logger.info("Selecting account to delete");
-        var list = accountService.getCurrentUser().getAccountList();
-        if (list.isEmpty()) {
-            throw new AccountOperationException("No accounts available.");
-        }
-
-        for (int i = 0; i < list.size(); i++) {
-            System.out.printf("%d. %s%n", i + 1, list.get(i));
-        }
-
-        while (true) {
-            String input = ConsoleUtils.prompt("Enter account " + label, false);
-            if (input == null || input.equalsIgnoreCase("back")) throw new UserCancelledException();
-
-            try {
-                int index = Integer.parseInt(input.trim()) - 1;
-                if (index >= 0 && index < list.size()) {
-                    logger.info(()->"Selected account "+index+" to delete");
-                    return list.get(index);
-                }
-                System.out.println(ConsoleStyle.error("Index out of range."));
-            } catch (NumberFormatException e) {
-                System.out.println(ConsoleStyle.error("Invalid index."));
-            }
-        }
+    private AccountInterface selectAccount(String label)
+            throws UserCancelledException, AccountOperationException {
+        List<AccountInterface> list = accountService.getCurrentUser().getAccountList();
+        if (list.isEmpty()) throw new AccountOperationException("No accounts available.");
+        return ConsoleUtils.selectFromList(list, "account " + label, false);
     }
 
     /**
@@ -193,6 +175,6 @@ public class AccountMenuCliController extends MenuCliController {
      */
     public void setUser(User user) {
         this.accountService.setCurrentUser(user);
-        logger.info("User set in AccountMenuCliController: " + user.getName());
     }
+
 }

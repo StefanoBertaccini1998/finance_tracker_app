@@ -16,23 +16,19 @@ public class AccountPrinter {
             return;
         }
 
-        System.out.println(ConsoleStyle.section("🏦 All Accounts"));
+        // Header
+        System.out.println(ConsoleStyle.section(
+                ConsoleEmoji.ACC_LIST + "All Accounts"));
 
+        // Rows
         accounts.stream()
-                .sorted(Comparator.comparing(AccountInterface::getName)) // ordinamento per nome
+                .sorted(Comparator.comparing(AccountInterface::getName))
                 .forEach(acc -> System.out.printf(
-                        "  ➤ 🏷️ Name: %-15s | 💰 Balance: %-10.2f | 📂 Type: %-10s%n",
-                        acc.getName(),
-                        acc.getBalance(),
-                        acc.getType()
+                        "  %s%sName: %-15s | %sBalance: %-10.2f | %sType: %-10s%n",
+                        ConsoleEmoji.ROW,
+                        ConsoleEmoji.TAG,   acc.getName(),
+                        ConsoleEmoji.MONEY, acc.getBalance(),
+                        ConsoleEmoji.FOLDER,acc.getType()
                 ));
-    }
-
-    public static void printAccountsExcluding(List<AccountInterface> accounts, AccountInterface exclude) {
-        printAccounts(
-                accounts.stream()
-                        .filter(acc -> !acc.equals(exclude))
-                        .toList()
-        );
     }
 }

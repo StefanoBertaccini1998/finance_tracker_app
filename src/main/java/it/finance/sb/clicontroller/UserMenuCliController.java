@@ -44,43 +44,33 @@ public class UserMenuCliController extends MenuCliController {
         this.mementoService = mementoService;
     }
 
-    /**
-     * Displays a CLI menu to load or create a user.
-     * Sets the selected or newly created user as current.
-     *
-     * @throws UserCancelledException if user exits the menu explicitly
-     */
     @Override
-    public void show() throws UserCancelledException {
+    protected String title() {
+        return "User Login";
+    }
+
+    @Override
+    protected List<MenuItem> menuItems() {
+        return List.of(
+                new MenuItem("Load existing user", this::loadUser),
+                new MenuItem("Create new user", this::createNewUser),
+                new MenuItem("Close", () -> {
+                    currentUser = null;            // signal “quit” to caller
+                    requestClose();                // exits renderLoop()
+                })      // no-op triggers loop exit
+        );
+    }
+
+    @Override
+    protected void preMenu() {
         System.out.println(ConsoleStyle.section("Load or Create User"));
+    }
 
-        // Repeat until a valid user is created or loaded
-        while (currentUser == null) {
-            int choice = ConsoleUtils.showMenu(
-                    "User Login",
-                    false,
-                    "Load existing user",
-                    "Create new user",
-                    "Close"
-            );
-
-            // Exit if user cancels
-            if (choice == -1) {
-                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED));
-                throw new UserCancelledException();
-            }
-
-            // Handle selected option
-            switch (choice) {
-                case 1 -> loadUser();
-                case 2 -> createNewUser();
-                case 3 -> throw new UserCancelledException();
-                default -> System.out.println(ConsoleStyle.warning(" Invalid option selected."));
-            }
+    @Override
+    protected void postMenu() {
+        if (currentUser != null) {
+            userService.setCurrentUser(currentUser);
         }
-
-        // Set the active user into the service context
-        userService.setCurrentUser(currentUser);
     }
 
 
@@ -109,7 +99,7 @@ public class UserMenuCliController extends MenuCliController {
             }
 
             // Let the user select a saved snapshot
-            int selected = ConsoleUtils.showMenu("Select a saved user", savedUsers.toArray(new String[0]));
+            int selected = ConsoleUtils.showMenu("Select a saved user", false, savedUsers.toArray(new String[0]));
             if (selected == -1) {
                 System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
                 return;
@@ -130,6 +120,7 @@ public class UserMenuCliController extends MenuCliController {
                 }
                 //Set current user
                 currentUser = user;
+                requestClose();
                 logger.info("Completed load user flow");
                 System.out.println(ConsoleStyle.success("User loaded: " + currentUser.getName()));
             } else {
@@ -177,7 +168,7 @@ public class UserMenuCliController extends MenuCliController {
                 // Create and save the user
                 currentUser = userService.create(name, age, gender, PasswordUtils.hash(password));
                 mementoService.saveUser(currentUser);
-
+                requestClose();
                 System.out.println(ConsoleStyle.success("User created and saved!"));
                 logger.info("Completed create new user flow");
                 completed = true;

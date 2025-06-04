@@ -1,5 +1,6 @@
 package it.finance.sb.io;
 
+import it.finance.sb.exception.CsvParseException;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.exception.TransactionOperationException;
 import it.finance.sb.factory.FinanceAbstractFactory;
@@ -15,9 +16,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 /**
@@ -56,7 +57,7 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
                                                 Map<String, AccountInterface> accountMap,
                                                 boolean autoCreateMissingAccounts,
                                                 boolean skipBadLines,
-                                                List<String> errorLog) throws IOException, DataValidationException {
+                                                List<String> errorLog) throws IOException, DataValidationException, CsvParseException {
         logger.info(() -> "Starting import from CSV: " + inputFile);
 
         // Verify file existence and type
@@ -69,52 +70,47 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
         List<String> localErrors = Collections.synchronizedList(new ArrayList<>());
 
         // Create thread pool with a size equal to number of CPU cores
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            try (BufferedReader reader = Files.newBufferedReader(inputFile)) {
+                // Check CSV header
+                String header = reader.readLine();
+                if (header == null || !header.strip().equalsIgnoreCase(EXPECTED_HEADER)) {
+                    throw new IOException("Invalid or missing CSV header. Expected: " + EXPECTED_HEADER);
+                }
 
-        try (BufferedReader reader = Files.newBufferedReader(inputFile)) {
-            // Check CSV header
-            String header = reader.readLine();
-            if (header == null || !header.strip().equalsIgnoreCase(EXPECTED_HEADER)) {
-                throw new IOException("Invalid or missing CSV header. Expected: " + EXPECTED_HEADER);
-            }
+                List<Future<?>> futures = new ArrayList<>();
+                AtomicInteger lineNum = new AtomicInteger(1);
+                String line;
 
-            List<Future<?>> futures = new ArrayList<>();
-            int[] lineNum = {1};
-            String line;
+                // Read and dispatch each line to a thread
+                while ((line = reader.readLine()) != null) {
+                    final String currentLine = line;
+                    final int currentLineNum = lineNum.incrementAndGet();
+                    if (currentLine.trim().isEmpty()) continue;
 
-            // Read and dispatch each line to a thread
-            while ((line = reader.readLine()) != null) {
-                final String currentLine = line;
-                final int currentLineNum = ++lineNum[0];
+                    // Each line is parsed in its own task
+                    futures.add(executor.submit(() -> {
+                        try {
+                            AbstractTransaction tx = parseLine(currentLine, currentLineNum, accountMap, autoCreateMissingAccounts);
+                            transactions.add(tx);
+                            logger.fine(() -> "Parsed transaction: " + tx);
+                        } catch (Exception e) {
+                            String msg = "[Line " + currentLineNum + "] " + e.getMessage();
+                            logger.warning("Skipped line " + currentLineNum + ": " + e.getMessage());
+                            localErrors.add(msg);
+                        }
+                    }));
+                }
 
-                if (currentLine.trim().isEmpty()) continue;
-
-                // Each line is parsed in its own task
-                futures.add(executor.submit(() -> {
+                // Ensure all parsing tasks complete
+                for (Future<?> future : futures) {
                     try {
-                        AbstractTransaction tx = parseLine(currentLine, currentLineNum, accountMap, autoCreateMissingAccounts);
-                        transactions.add(tx);
-                        logger.fine(() -> "Parsed transaction: " + tx);
+                        future.get();
                     } catch (Exception e) {
-                        String msg = "[Line " + currentLineNum + "] " + e.getMessage();
-                        logger.warning("Skipped line " + currentLineNum + ": " + e.getMessage());
-                        localErrors.add(msg);
+                        handleThreadException(e);
                     }
-                }));
-            }
-
-            // Ensure all parsing tasks complete
-            for (Future<?> future : futures) {
-                try {
-                    future.get();
-                } catch (Exception e) {
-                    handleThreadException(e);
                 }
             }
-        } finally {
-            // Always shutdown executor to release system resources
-            executor.shutdown();
-            executor.close();
         }
 
         // Append local parsing errors to external log if provided
@@ -122,7 +118,7 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
 
         // Fail if not skipping bad lines and any errors were encountered
         if (!skipBadLines && !localErrors.isEmpty()) {
-            throw new DataValidationException("Import failed. Invalid lines:\n" + String.join("\n", localErrors));
+            throw new CsvParseException("Import failed. Invalid lines:\n" + String.join("\n", localErrors));
         }
 
         logger.info(() -> "Completed import. Total parsed: " + transactions.size());
@@ -145,11 +141,11 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
     private AbstractTransaction parseLine(String line,
                                           int lineNum,
                                           Map<String, AccountInterface> accountMap,
-                                          boolean autoCreate) throws DataValidationException, TransactionOperationException {
+                                          boolean autoCreate) throws DataValidationException, TransactionOperationException, CsvParseException {
 
         String[] fields = line.split(",", -1);
         if (fields.length < 8) {
-            throw new DataValidationException("Line " + lineNum + ": too few fields. Expected 8 fields.");
+            throw new CsvParseException("Line " + lineNum + ": too few fields. Expected 8 fields.");
         }
 
         String typeStr = fields[1].trim();
@@ -162,13 +158,13 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
 
         // Mandatory field check
         if (typeStr.isEmpty()) {
-            throw new DataValidationException("Line " + lineNum + ": missing transaction type.");
+            throw new CsvParseException("Line " + lineNum + ": missing transaction type.");
         }
         if (amountStr.isEmpty()) {
-            throw new DataValidationException("Line " + lineNum + ": missing amount.");
+            throw new CsvParseException("Line " + lineNum + ": missing amount.");
         }
         if (dateStr.isEmpty()) {
-            throw new DataValidationException("Line " + lineNum + ": missing date.");
+            throw new CsvParseException("Line " + lineNum + ": missing date.");
         }
 
         TransactionType type;
@@ -178,19 +174,19 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
         try {
             type = TransactionType.valueOf(typeStr);
         } catch (IllegalArgumentException e) {
-            throw new DataValidationException("Line " + lineNum + ": invalid transaction type: '" + typeStr + "'");
+            throw new CsvParseException("Line " + lineNum + ": invalid transaction type: '" + typeStr + "'");
         }
 
         try {
             amount = Double.parseDouble(amountStr);
         } catch (NumberFormatException e) {
-            throw new DataValidationException("Line " + lineNum + ": invalid amount: '" + amountStr + "'");
+            throw new CsvParseException("Line " + lineNum + ": invalid amount: '" + amountStr + "'");
         }
 
         try {
             date = new Date(Long.parseLong(dateStr));
         } catch (NumberFormatException e) {
-            throw new DataValidationException("Line " + lineNum + ": invalid date format: '" + dateStr + "'");
+            throw new CsvParseException("Line " + lineNum + ": invalid date format: '" + dateStr + "'");
         }
 
         AccountInterface from = resolveAccount(accountMap, fromName, autoCreate);
@@ -208,48 +204,64 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
     private void validateRequiredAccounts(TransactionType type,
                                           AccountInterface from,
                                           AccountInterface to,
-                                          int lineNum) throws DataValidationException {
+                                          int lineNum) throws CsvParseException {
         switch (type) {
             case INCOME -> {
                 if (to == null)
-                    throw new DataValidationException("Line " + lineNum + ": missing destination account for INCOME");
+                    throw new CsvParseException("Line " + lineNum + ": missing destination account for INCOME");
             }
             case EXPENSE -> {
                 if (from == null)
-                    throw new DataValidationException("Line " + lineNum + ": missing source account for EXPENSE");
+                    throw new CsvParseException("Line " + lineNum + ": missing source account for EXPENSE");
             }
             case MOVEMENT -> {
                 if (from == null)
-                    throw new DataValidationException("Line " + lineNum + ": missing source account for MOVEMENT");
+                    throw new CsvParseException("Line " + lineNum + ": missing source account for MOVEMENT");
                 if (to == null)
-                    throw new DataValidationException("Line " + lineNum + ": missing destination account for MOVEMENT");
+                    throw new CsvParseException("Line " + lineNum + ": missing destination account for MOVEMENT");
                 if (from.equals(to))
-                    throw new DataValidationException("Line " + lineNum + ": source and destination accounts must be different");
+                    throw new CsvParseException("Line " + lineNum + ": source and destination accounts must be different");
             }
         }
     }
+
+
+    /**
+     * Shared lock only inside this CsvImporter instance
+     */
+    private final Object accountLock = new Object();
 
     /**
      * Resolves an account by name. Creates a new account if not found and autoCreate is enabled.
      * Synchronized to prevent concurrent creation of the same account.
      */
-    private synchronized AccountInterface resolveAccount(Map<String, AccountInterface> accountMap,
-                                                         String name,
-                                                         boolean autoCreate) throws DataValidationException {
+    private AccountInterface resolveAccount(Map<String, AccountInterface> accounts,
+                                            String name,
+                                            boolean autoCreate) throws DataValidationException {
         if (name.isBlank()) return null;
 
-        AccountInterface account = accountMap.get(name);
-        if (account == null && autoCreate) {
-            account = factory.createAccount(AccounType.BANK, name, 0.00);
-            accountMap.put(name, account);
-            newlyCreatedAccounts.add(account);
+        // Fast, un-synchronised read
+        AccountInterface acc = accounts.get(name);
+        if (acc != null || !autoCreate) return acc;
+
+        /* ---------- critical section ---------- */
+        synchronized (accountLock) {
+            // Someone else might have created it while we were waiting
+            acc = accounts.get(name);
+            if (acc != null) return acc;
+
+            // Safe to create now; factory may throw a checked exception
+            acc = factory.createAccount(AccounType.BANK, name, 0.00);
+            accounts.put(name, acc);
+            newlyCreatedAccounts.add(acc);
+            return acc;
         }
-        return account;
     }
 
     public List<AccountInterface> getNewlyCreatedAccounts() {
         return newlyCreatedAccounts;
     }
+
 
     /**
      * Handles exceptions thrown during multi-threaded parsing.
@@ -260,15 +272,19 @@ public class CsvImporter implements ImporterI<AbstractTransaction> {
             logger.warning("CSV import thread interrupted: " + ie.getMessage());
             Thread.currentThread().interrupt();
             throw new IOException("CSV import was interrupted.", ie);
-        } else if (e instanceof ExecutionException ee) {
+
+        } else if (e instanceof ExecutionException ee) {       // <-- change back
             Throwable cause = ee.getCause();
-            if (cause instanceof DataValidationException || cause instanceof TransactionOperationException) {
-                throw new IOException("Validation error during CSV import: " + cause.getMessage(), cause);
-            } else {
-                throw new IOException("Unexpected error during CSV import: " + cause.getMessage(), cause);
-            }
+            if (cause instanceof CsvParseException cpe)
+                throw new IOException("Validation error during CSV import: "
+                        + cpe.getMessage(), cpe);
+            else
+                throw new IOException("Unexpected error during CSV import: "
+                        + cause.getMessage(), cause);
+
         } else {
-            throw new IOException("Unhandled error during thread execution: " + e.getMessage(), e);
+            throw new IOException("Unhandled error during thread execution: "
+                    + e.getMessage(), e);
         }
     }
 }

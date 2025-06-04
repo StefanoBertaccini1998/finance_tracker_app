@@ -52,8 +52,17 @@ public class IncomeTransaction extends AbstractTransaction {
     }
 
     @Override
-    public String toCsv() {
-        return formatCsvLine(null, toAccount.getName(), category, reason, date.getTime());
+    public String[] toCsv() {
+        return new String[]{
+                String.valueOf(transactionId),
+                type.name(),
+                String.valueOf(amount),
+                "",
+                toAccount   == null ? "" : toAccount.getName(),
+                category    == null ? "" : category,
+                reason      == null ? "" : reason,
+                String.valueOf(date.getTime())
+        };
     }
 
     @Override

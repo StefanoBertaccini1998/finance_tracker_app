@@ -14,14 +14,9 @@ import java.util.logging.Logger;
 public class AccountFactory {
     private static final Logger logger = LoggerFactory.getSafeLogger(AccountFactory.class);
 
-    public static AccountInterface createAccount(AccounType type, String name, double balance) {
+    public AccountInterface createAccount(AccounType type, String name, double balance) {
         Account account = new Account(name, balance, type);
         logger.info(() -> "Creating account: " + name + " of type " + type);
         return account;
     }
-
-    private AccountFactory() {
-        throw new IllegalStateException("Factory class");
-    }
-
 }

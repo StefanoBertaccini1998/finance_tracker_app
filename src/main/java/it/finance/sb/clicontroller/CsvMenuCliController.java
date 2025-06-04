@@ -40,19 +40,24 @@ public class CsvMenuCliController extends MenuCliController {
         this.fileIOService = fileIOService;
     }
 
-    /**
-     * Displays the CSV menu to the user and routes actions based on the user's selection.
-     *
-     * @throws UserCancelledException if the user exits the menu
-     */
+    /* Template overrides */
     @Override
-    public void show() throws UserCancelledException {
-        menuLoop("CSV Menu",
-                new String[]{"Import Transactions", "Export Transactions", "Back"},
-                this::importTransactions,
-                this::exportTransactions,
-                null
+    protected String title() {
+        return "CSV Menu";
+    }
+
+    @Override
+    protected List<MenuItem> menuItems() {
+        return List.of(
+                new MenuItem("Import Transactions", this::importTransactions),
+                new MenuItem("Export Transactions", this::exportTransactions),
+                new MenuItem("Back", this::requestClose)         // exit loop
         );
+    }
+
+    @Override
+    protected void preMenu() {
+        System.out.println(ConsoleStyle.section("CSV Import / Export"));
     }
 
     /**
@@ -133,6 +138,6 @@ public class CsvMenuCliController extends MenuCliController {
      * @param user the logged-in user
      */
     public void setUser(User user) {
-        this.fileIOService.setCurrentUser(user);
+        fileIOService.setCurrentUser(user);
     }
 }

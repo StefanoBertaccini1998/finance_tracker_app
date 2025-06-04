@@ -2,8 +2,11 @@ package it.finance.sb.utility;
 
 import it.finance.sb.exception.UserCancelledException;
 
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ConsoleUtils {
 
@@ -17,25 +20,32 @@ public class ConsoleUtils {
         return showMenu(title, true, options);
     }
 
-    public static int showMenu(String title, boolean allowBack, String... options) throws UserCancelledException {
+    public static int showMenu(String title,
+                               boolean allowBack,
+                               String... options) throws UserCancelledException {
         System.out.println(ConsoleStyle.menuTitle(title));
-        for (int i = 0; i < options.length; i++) {
-            System.out.printf("%d. %s%n", i + 1, options[i]);
-        }
 
+        // Print numbered options, nicely coloured
+        IntStream.range(0, options.length)
+                .forEach(i -> System.out.println(
+                        ConsoleStyle.info((i + 1) + ". " + options[i])));
+
+        // Interactive loop
         while (true) {
-            String input;
-            input = prompt("Select option", false, allowBack);
+            String input = prompt("Select option", false, allowBack);
+
+            // prompt(…) returns **null** when the user typed “back”
+            // (only possible if allowBack == true)
             if (input == null) return -1;
+
             try {
                 int selected = Integer.parseInt(input.trim());
                 if (selected >= 1 && selected <= options.length) {
-                    return selected;
-                } else {
-                    System.out.println(ConsoleStyle.warning(" Option out of range. Try again."));
+                    return selected;                 // ✅ valid choice
                 }
+                System.out.println(ConsoleStyle.warning("Option out of range. Try again."));
             } catch (NumberFormatException e) {
-                System.out.println(ConsoleStyle.warning(" Invalid input. Enter a number."));
+                System.out.println(ConsoleStyle.warning("Invalid input. Enter a number."));
             }
         }
     }
@@ -47,7 +57,9 @@ public class ConsoleUtils {
     }
 
     public static String prompt(String label, boolean allowEmpty, boolean allowBack) throws UserCancelledException {
-        System.out.print(ConsoleStyle.inputPrompt(label + (allowEmpty ? " (leave blank to skip) " : " ") + (allowBack ? "(type 'back' to cancel)" : "")));
+        System.out.print(ConsoleStyle.inputPrompt(
+                label + (allowEmpty ? " (leave blank to skip) " : " ")
+                        + (allowBack ? "(type 'back' to cancel)" : "")));
         String input = scanner.nextLine().trim();
 
         if (allowBack && input.equalsIgnoreCase("back")) {
@@ -110,9 +122,9 @@ public class ConsoleUtils {
 
         while (true) {
             System.out.println(ConsoleStyle.menuTitle("Select " + title));
-            for (int i = 0; i < values.length; i++) {
-                System.out.printf("  %d. %s%n", i + 1, values[i]);
-            }
+            IntStream.range(0, values.length)
+                    .forEach(i ->
+                            System.out.println(ConsoleStyle.info("  " + (i + 1) + ". " + values[i])));
 
             String input = prompt("Enter choice", allowEmpty, allowBack);
 
@@ -145,9 +157,9 @@ public class ConsoleUtils {
             System.out.println(ConsoleStyle.warning("No categories found. Please type a new one."));
         } else {
             System.out.println(ConsoleStyle.section("Select a category or type a new one:"));
-            for (int i = 0; i < existing.size(); i++) {
-                System.out.printf("  %d. %s%n", i + 1, existing.get(i));
-            }
+            IntStream.range(0, existing.size())
+                    .forEach(i ->
+                            System.out.println(ConsoleStyle.info("  " + (i + 1) + ". " + existing.get(i))));
         }
 
         String input = prompt("Enter category", allowEmpty, allowBack);
@@ -162,6 +174,81 @@ public class ConsoleUtils {
             return selectOrCreateCategory(existing, allowEmpty, allowBack);
         } catch (NumberFormatException e) {
             return input.toUpperCase();
+        }
+    }
+
+
+
+    /**
+     * Generic selector that prints a numbered list, prompts for an index,
+     * and returns the chosen element.
+     *
+     * @param list        the items to show (empty → UserCancelledException)
+     * @param label       context text such as "account", "transaction"
+     * @param nullable    if true the user may type <code>back</code> to cancel
+     * @throws UserCancelledException if the user types <code>back</code>
+     */
+    public static <T> T selectFromList(List<T> list, String label, boolean nullable)
+            throws UserCancelledException {
+        return selectFromList(list, label, nullable, x -> false, Object::toString);
+    }
+
+    /**
+     * Generic selector that prints a numbered list, prompts for an index,
+     * and returns the chosen element.
+     *
+     * @param list        the items to show (empty → UserCancelledException)
+     * @param label       context text such as "account", "transaction"
+     * @param nullable    if true the user may type <code>back</code> to cancel
+     * @param skip        optional predicate to hide items (e.g. exclude "from" account);
+     *                    pass <code>x -> false</code> if no filtering is needed
+     * @param mapper      maps an element to the line to display; pass <code>Object::toString</code>
+     *                    for default behaviour
+     * @throws UserCancelledException if the user types <code>back</code>
+     */
+    public static <T> T selectFromList(
+            List<T> list,
+            String label,
+            boolean nullable,
+            Predicate<T> skip,
+            Function<T, String> mapper) throws UserCancelledException {
+
+        Objects.requireNonNull(skip);
+        Objects.requireNonNull(mapper);
+
+        if (list == null || list.isEmpty() || list.stream().allMatch(skip)) {
+            throw new NoSuchElementException("No selectable " + label + "s available.");
+        }
+
+        // 1️⃣ Build visible index → item map
+        Map<Integer, T> visible = new LinkedHashMap<>();
+        int index = 1;
+        for (T item : list) {
+            if (skip.test(item)) continue;
+            visible.put(index++, item);
+        }
+
+        // 2️⃣ Print nicely
+        visible.forEach((i, item) ->
+                System.out.println(ConsoleStyle.info(i + ". " + mapper.apply(item))));
+
+        // 3️⃣ Prompt & validate
+        while (true) {
+            String input = prompt("Enter " + label + " index" +
+                    (nullable ? " (or 'back')" : ""), !nullable);
+
+            if (nullable && "back".equalsIgnoreCase(input)) {
+                throw new UserCancelledException();
+            }
+            try {
+                int idx = Integer.parseInt(input.trim());
+                if (visible.containsKey(idx)) {
+                    return visible.get(idx);
+                }
+                System.out.println(ConsoleStyle.error("Index out of range."));
+            } catch (NumberFormatException ex) {
+                System.out.println(ConsoleStyle.error("Invalid index."));
+            }
         }
     }
 }

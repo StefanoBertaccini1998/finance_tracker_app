@@ -1,8 +1,10 @@
 package it.finance.sb.service;
 
 import it.finance.sb.exception.FileIOException;
+import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.factory.DefaultFinanceFactory;
 import it.finance.sb.factory.FinanceAbstractFactory;
+import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.io.CsvImporter;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.io.ImporterI;
@@ -40,7 +42,7 @@ class FileIOServiceTest {
     void setUp() {
         user = new User("TestUser", 30, Gender.OTHER, PasswordUtils.hash("Password"));
         userService = new UserService();
-        FinanceAbstractFactory factory = new DefaultFinanceFactory();
+        FinanceAbstractFactory factory = new DefaultFinanceFactory(new TransactionFactory(), new AccountFactory());
         transactionService = new TransactionService(userService, factory);
         mockImporter = Mockito.mock(CsvImporter.class);
         mockWriter = Mockito.mock(CsvWriter.class);

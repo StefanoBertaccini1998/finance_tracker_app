@@ -22,7 +22,7 @@ class DefaultFinanceFactoryTest {
 
     @BeforeEach
     void setup() {
-        factory = new DefaultFinanceFactory();
+        factory = new DefaultFinanceFactory(        new TransactionFactory(), new AccountFactory());
         to = new Account("To", 1000.0, AccounType.BANK);
         from = new Account("From", 1000.0, AccounType.CASH);
     }

@@ -20,24 +20,28 @@ public class TransactionPrinter {
     /**
      * Displays a sorted, formatted list of transactions.
      *
-     * @param transactions the list of transactions to print
+     * @param txs the list of transactions to print
      */
-    public static void printTransactions(List<AbstractTransaction> transactions) {
-        if (transactions == null || transactions.isEmpty()) {
+    public static void printTransactions(List<AbstractTransaction> txs) {
+        if (txs == null || txs.isEmpty()) {
             System.out.println(ConsoleStyle.warning(" No transactions found."));
             return;
         }
 
-        System.out.println(ConsoleStyle.section("📋 All Transactions"));
+        // Header ───────────────────────────────────────
+        System.out.println(ConsoleStyle.section(
+                ConsoleEmoji.LIST + "All Transactions"));
 
-        transactions.stream()
+        // Body rows ────────────────────────────────────
+        txs.stream()
                 .sorted(Comparator.comparingInt(AbstractTransaction::getTransactionId))
                 .forEach(tx -> System.out.printf(
-                        "  ➤ 💰 Amount: %-8.2f | 📌 Category: %-12s | 📃 Reason: %-20s | 📅 Date: %-12s | Type: %-9s%n",
-                        tx.getAmount(),
-                        tx.getCategory(),
-                        tx.getReason(),
-                        dateFormat.format(tx.getDate()),
+                        "  %s%sAmount: %-8.2f | %sCategory: %-12s | %sReason: %-20s | %sDate: %-10s | Type: %-9s%n",
+                        ConsoleEmoji.ROW,
+                        ConsoleEmoji.MONEY,      tx.getAmount(),
+                        ConsoleEmoji.CAT,        tx.getCategory(),
+                        ConsoleEmoji.NOTE,       tx.getReason(),
+                        ConsoleEmoji.DATE,       dateFormat.format(tx.getDate()),
                         tx.getType().name()
                 ));
     }

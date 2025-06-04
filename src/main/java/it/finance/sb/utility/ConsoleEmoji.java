@@ -17,6 +17,18 @@ public class ConsoleEmoji {
     public static final String MENU = ENABLED ? "🔹 " : "[MENU] ";
     public static final String INPUT = ENABLED ? "👉 " : "> ";
 
+    public static final String LIST   = ENABLED ? "📋 "  : "";
+    public static final String ROW    = ENABLED ? "➤ "  : "- ";
+    public static final String MONEY  = ENABLED ? "💰 " : "";
+    public static final String CAT    = ENABLED ? "📌 " : "";
+    public static final String NOTE   = ENABLED ? "📃 " : "";
+    public static final String DATE   = ENABLED ? "📅 " : "";
+
+    /* ── AccountPrinter extras ── */
+    public static final String ACC_LIST = ENABLED ? "🏦 " : "";
+    public static final String TAG      = ENABLED ? "🏷️ " : "";
+    public static final String FOLDER   = ENABLED ? "📂 " : "";
+
     private ConsoleEmoji() {
         throw new IllegalStateException("Utility class");
     }

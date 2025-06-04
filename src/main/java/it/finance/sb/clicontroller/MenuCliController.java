@@ -3,29 +3,56 @@ package it.finance.sb.clicontroller;
 import it.finance.sb.exception.UserCancelledException;
 import it.finance.sb.utility.ConsoleUtils;
 
+import java.util.List;
+
 /**
- * Interface for application menu controllers.
+ * Base class for all CLI menu controllers (Template Method pattern).
  */
 abstract class MenuCliController {
+
+    private boolean closeRequested = false;
+
     /**
-     * Displays the menu loop for user interaction.
+     * Entry‑point called by concrete controllers.
      *
      * @throws UserCancelledException if user cancels the operation
      */
-    abstract void show() throws UserCancelledException;
+    public final void display() throws UserCancelledException {
+        closeRequested = false;
+        preMenu();
+        renderLoop();
+        postMenu();
+    }
+
+    /* Optional hooks  */
+    protected void preMenu() {
+    }
+
+    protected void postMenu() {
+    }
+
+    /* Must‑implement contracts */
+    protected abstract String title();
+
+    protected abstract List<MenuItem> menuItems();
 
     /**
      * Generic menu loop for CLI navigation.
-     *
-     * @param title   the menu title
-     * @param options the menu options
-     * @param actions the corresponding actions
+     * Core loop — never overridden.
      */
-    public void menuLoop(String title, String[] options, Runnable... actions) throws UserCancelledException {
-        while (true) {
-            int choice = ConsoleUtils.showMenu(title, false, options);
-            if (choice == -1 || choice > actions.length || actions[choice - 1] == null) return;
-            actions[choice - 1].run();
+    private void renderLoop() throws UserCancelledException {
+        while (!closeRequested) {
+            int choice = ConsoleUtils.showMenu(
+                    title(), false,
+                    menuItems().stream().map(MenuItem::label).toArray(String[]::new));
+
+            if (choice == -1) return;
+            menuItems().get(choice - 1).action().run();
         }
     }
+
+    protected final void requestClose() {
+        closeRequested = true;
+    }
+
 }

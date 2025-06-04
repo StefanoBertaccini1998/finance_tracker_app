@@ -10,11 +10,19 @@ import it.finance.sb.utility.InputSanitizer;
 import java.util.Date;
 
 public class DefaultFinanceFactory implements FinanceAbstractFactory {
-    private final TransactionAbstractFactory transactionFactory = new TransactionFactory();
+
+    private final TransactionAbstractFactory transactionFactory;
+    private final AccountFactory accountFactory;        // will convert to instance factory
+
+    public DefaultFinanceFactory(TransactionAbstractFactory txFactory,
+                                 AccountFactory accFactory) {
+        this.transactionFactory = txFactory;
+        this.accountFactory = accFactory;
+    }
 
     @Override
     public AccountInterface createAccount(AccounType type, String name, double balance) throws DataValidationException {
-        AccountInterface account = AccountFactory.createAccount(type, name, balance);
+        AccountInterface account = accountFactory.createAccount(type, name, balance);
         InputSanitizer.validate(account);
         return account;
     }

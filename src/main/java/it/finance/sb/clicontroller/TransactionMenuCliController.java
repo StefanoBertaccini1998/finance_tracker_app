@@ -14,7 +14,9 @@ import it.finance.sb.utility.ConsoleStyle;
 import it.finance.sb.utility.ConsoleUtils;
 import it.finance.sb.utility.TransactionPrinter;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,6 +32,7 @@ public class TransactionMenuCliController extends MenuCliController {
     public static final String OPERATION_CANCELLED_BY_USER = "Operation cancelled by user.";
     public static final String UNEXPECTED_ERROR = "Unexpected error: ";
     public static final String SESSION_ERROR = "Session error: ";
+    public static final String NO_TRANSACTIONS_AVAILABLE = "No transactions available.";
     private final TransactionService transactionService;
     private User user;
     private static final Logger logger = LoggerFactory.getSafeLogger(TransactionMenuCliController.class);
@@ -43,26 +46,20 @@ public class TransactionMenuCliController extends MenuCliController {
         this.transactionService = transactionService;
     }
 
-    /**
-     * Displays the main menu for managing transactions.
-     *
-     * @throws UserCancelledException if the user cancels the interaction
-     */
+    /* Template overrides */
     @Override
-    public void show() throws UserCancelledException {
-        menuLoop("Transaction Menu",
-                new String[]{
-                        "View Transactions",
-                        "Create Transaction",
-                        "Update Transaction",
-                        "Delete Transaction",
-                        "Back"
-                },
-                this::displayAllTransactions,
-                this::createTransaction,
-                this::updateTransaction,
-                this::deleteTransaction,
-                null
+    protected String title() {
+        return "Transaction Menu";
+    }
+
+    @Override
+    protected List<MenuItem> menuItems() {
+        return List.of(
+                new MenuItem("View Transactions", this::displayAllTransactions),
+                new MenuItem("Create Transaction", this::createTransaction),
+                new MenuItem("Update Transaction", this::updateTransaction),
+                new MenuItem("Delete Transaction", this::deleteTransaction),
+                new MenuItem("Back", this::requestClose)         // exit loop
         );
     }
 
@@ -113,8 +110,15 @@ public class TransactionMenuCliController extends MenuCliController {
     private void updateTransaction() {
         System.out.println(ConsoleStyle.menuTitle("Update Transaction"));
         logger.info("Started update transaction flow");
+
+        List<AbstractTransaction> all = transactionService.getAllTransactionsFlattened();
+        if (all.isEmpty()) {                                 // ← guard
+            System.out.println(ConsoleStyle.warning(NO_TRANSACTIONS_AVAILABLE));
+            return;
+        }
         try {
-            AbstractTransaction tx = selectFromList(transactionService.getAllTransactionsFlattened(), "to update");
+            AbstractTransaction tx = ConsoleUtils.selectFromList(
+                    transactionService.getAllTransactionsFlattened(), "transaction to update", false);
 
             // Prompt for new values
             Double amount = ConsoleUtils.promptForDouble("New amount (blank to skip)", true);
@@ -148,8 +152,15 @@ public class TransactionMenuCliController extends MenuCliController {
     private void deleteTransaction() {
         System.out.println(ConsoleStyle.menuTitle("Delete Transaction"));
         logger.info("Started delete transaction flow");
+
+        List<AbstractTransaction> all = transactionService.getAllTransactionsFlattened();
+        if (all.isEmpty()) {                                 // ← guard
+            System.out.println(ConsoleStyle.warning(NO_TRANSACTIONS_AVAILABLE));
+            return;
+        }
         try {
-            AbstractTransaction tx = selectFromList(transactionService.getAllTransactionsFlattened(), "to delete");
+            AbstractTransaction tx = ConsoleUtils.selectFromList(
+                    transactionService.getAllTransactionsFlattened(), "transaction to delete", false);
             transactionService.delete(tx);
             System.out.println(ConsoleStyle.success("Transaction deleted."));
             logger.info("Transaction deleted: " + tx.getTransactionId());
@@ -173,27 +184,32 @@ public class TransactionMenuCliController extends MenuCliController {
      * Displays all transactions currently associated with the user.
      */
     private void displayAllTransactions() {
-        logger.info("Started display transaction flow");
-        List<AbstractTransaction> list = transactionService.getAllTransactionsFlattened();
-        if (list.isEmpty()) {
-            System.out.println(ConsoleStyle.warning("No transactions available."));
-        } else {
-            TransactionPrinter.printTransactions(list);
-            try {
-                menuLoop("View Transactions by:",
-                        new String[]{
-                                "Type",
-                                "Category",
-                                "Reason",
-                                "Back"
-                        },
-                        this::filterByType,
-                        this::filterByCategory,
-                        this::filterByReason,
-                        null);
-            } catch (UserCancelledException e) {
-                System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
+        try {
+            logger.info("Started display transaction flow");
+            List<AbstractTransaction> list =
+                    transactionService.getAllTransactionsFlattened();
+
+            if (list.isEmpty()) {
+                System.out.println(ConsoleStyle.warning(NO_TRANSACTIONS_AVAILABLE));
+                return;
             }
+
+            TransactionPrinter.printTransactions(list);
+
+            while (true) {
+                int c = ConsoleUtils.showMenu("Filter by:", true,
+                        "Type", "Category", "Reason", "Back");
+                switch (c) {
+                    case 1 -> filterByType();
+                    case 2 -> filterByCategory();
+                    case 3 -> filterByReason();
+                    default -> {
+                        return;
+                    }        // Back
+                }
+            }
+        } catch (UserCancelledException ignore) {
+            System.out.println(ConsoleStyle.back(OPERATION_CANCELLED_BY_USER));
         }
     }
 
@@ -245,67 +261,24 @@ public class TransactionMenuCliController extends MenuCliController {
         AccountInterface to = null;
         List<AccountInterface> accounts = user.getAccountList();
         switch (type) {
-            case INCOME -> to = selectFromList(user.getAccountList(), "destination account");
-            case EXPENSE -> from = selectFromList(user.getAccountList(), "source account");
+            case INCOME -> to = ConsoleUtils.selectFromList(user.getAccountList(), "destination account", false);
+            case EXPENSE -> from = ConsoleUtils.selectFromList(user.getAccountList(), "source account", false);
             case MOVEMENT -> {
-                if (accounts.size() < 2) {
-                    throw new TransactionOperationException("At least two accounts are required for a movement transaction.");
-                }
-                from = selectFromList(user.getAccountList(), "source account");
-                to = selectFromList(user.getAccountList(), "destination account", from);
+                if (accounts.size() < 2)
+                    throw new TransactionOperationException("At least two accounts are required.");
+
+                AccountInterface src = ConsoleUtils.selectFromList(accounts, "source account", false);
+
+                Predicate<AccountInterface> skipSrc = a -> a.equals(src);
+                AccountInterface dst = ConsoleUtils.selectFromList(
+                        accounts, "destination account", false, skipSrc, Object::toString);
+
+                from = src;
+                to = dst;
             }
         }
         logger.info("Accounts got for transaction");
         return new AccountInterface[]{to, from};
-    }
-
-    /**
-     * Displays a list of items and prompts the user to select one.
-     *
-     * @param list  the list of items
-     * @param label a textual description shown to the user
-     * @param <T>   the type of items in the list
-     * @return the selected item
-     * @throws UserCancelledException if the user types 'back'
-     */
-    private <T> T selectFromList(List<T> list, String label) throws UserCancelledException, TransactionOperationException {
-        return selectFromList(list, label, null);
-    }
-
-    private <T> T selectFromList(List<T> list, String label, T exclude) throws UserCancelledException, TransactionOperationException {
-        if (list == null || list.isEmpty()) {
-            throw new TransactionOperationException("No transactions available.");
-        }
-
-        // Mappa visibile: solo gli elementi da mostrare (escludendo 'exclude')
-        Map<Integer, T> visibleMap = new LinkedHashMap<>();
-        int displayIndex = 1;
-
-        for (T item : list) {
-            if (item.equals(exclude)) continue;
-            visibleMap.put(displayIndex, item);
-            System.out.printf("%d. %s%n", displayIndex, item);
-            displayIndex++;
-        }
-
-        if (visibleMap.isEmpty()) {
-            throw new TransactionOperationException("No valid options available.");
-        }
-        while (true) {
-            String input = ConsoleUtils.prompt("Enter " + label + " index (or 'back')", false);
-            if (input == null || input.equalsIgnoreCase("back")) throw new UserCancelledException();
-
-            try {
-                int selection = Integer.parseInt(input.trim());
-                if (visibleMap.containsKey(selection)) {
-                    return visibleMap.get(selection);
-                }
-                System.out.println(ConsoleStyle.error("Index out of range."));
-            } catch (NumberFormatException e) {
-                logger.log(Level.SEVERE, "Failed to load user snapshot", e);
-                System.out.println(ConsoleStyle.error("Invalid index."));
-            }
-        }
     }
 
 
@@ -317,7 +290,6 @@ public class TransactionMenuCliController extends MenuCliController {
      */
     public void setUser(User user) {
         this.user = user;
-        this.transactionService.setCurrentUser(user);
-        logger.info("User set in TransactionMenuCliController: " + user.getName());
+        transactionService.setCurrentUser(user);
     }
 }

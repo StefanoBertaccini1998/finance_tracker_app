@@ -6,6 +6,7 @@ import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
 import it.finance.sb.model.transaction.TransactionType;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
@@ -16,7 +17,7 @@ import java.util.logging.Logger;
  * to the correct TransactionCreator implementation based on the given type.
  * It applies the Factory and Strategy design patterns.
  */
-public class TransactionFactory implements TransactionAbstractFactory{
+public class TransactionFactory implements TransactionAbstractFactory {
 
     private static final Logger logger = LoggerFactory.getSafeLogger(TransactionFactory.class);
 
@@ -24,7 +25,8 @@ public class TransactionFactory implements TransactionAbstractFactory{
      * Registry of creators mapped by transaction type.
      * Uses Strategy pattern to delegate creation logic.
      */
-    private static final Map<TransactionType, TransactionCreator> creators = new EnumMap<>(TransactionType.class);
+    private static final Map<TransactionType, TransactionCreator> creators =
+            Collections.synchronizedMap(new EnumMap<>(TransactionType.class));
 
     static {
         creators.put(TransactionType.INCOME, new IncomeTransactionCreator());
@@ -35,13 +37,13 @@ public class TransactionFactory implements TransactionAbstractFactory{
     /**
      * Creates a transaction of the specified type and applies validation.
      *
-     * @param type   Type of the transaction
-     * @param amount Transaction amount
+     * @param type     Type of the transaction
+     * @param amount   Transaction amount
      * @param category Category label
-     * @param reason Optional reason or description
-     * @param date Date of transaction
-     * @param to Account credited (if applicable)
-     * @param from Account debited (if applicable)
+     * @param reason   Optional reason or description
+     * @param date     Date of transaction
+     * @param to       Account credited (if applicable)
+     * @param from     Account debited (if applicable)
      * @return A validated AbstractTransaction instance
      * @throws TransactionOperationException if the type is unsupported
      */
@@ -57,13 +59,13 @@ public class TransactionFactory implements TransactionAbstractFactory{
 
         TransactionCreator creator = creators.get(type);
         if (creator == null) {
-            logger.severe(()->"Unsupported transaction type: " + type);
+            logger.severe(() -> "Unsupported transaction type: " + type);
             throw new TransactionOperationException("Unsupported transaction type: " + type);
         }
 
         AbstractTransaction transaction = creator.create(amount, category, reason, date, to, from);
 
-        logger.info(()->"Transaction created and validated: Type=" + type + ", Amount=" + amount);
+        logger.info(() -> "Transaction created and validated: Type=" + type + ", Amount=" + amount);
         return transaction;
     }
 
@@ -71,19 +73,19 @@ public class TransactionFactory implements TransactionAbstractFactory{
      * Allows manual registration of a custom TransactionCreator.
      * Useful for extending the system dynamically or during testing.
      *
-     * @param type Transaction type to associate
+     * @param type    Transaction type to associate
      * @param creator Creator implementation
      */
-    public static void registerCreator(TransactionType type, TransactionCreator creator) {
+    public static synchronized void registerCreator(TransactionType type, TransactionCreator creator) {
         creators.put(type, creator);
-        logger.info(()->"Custom TransactionCreator registered for type: " + type);
+        logger.info(() -> "Custom TransactionCreator registered for type: " + type);
     }
 
     /**
      * Clears all registered creators.
      * Mainly used for testing purposes.
      */
-    public static void clearCreators() {
+    public static synchronized void clearCreators() {
         creators.clear();
         logger.warning("TransactionFactory creators map cleared.");
     }

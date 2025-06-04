@@ -1,8 +1,10 @@
 package it.finance.sb;
 
 import it.finance.sb.clicontroller.MainMenuCliController;
+import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.factory.DefaultFinanceFactory;
 import it.finance.sb.factory.FinanceAbstractFactory;
+import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.io.CsvImporter;
 import it.finance.sb.io.CsvWriter;
 import it.finance.sb.io.ImporterI;
@@ -38,7 +40,7 @@ public class MainApplication {
 
         // Instantiate core domain services and dependencies
         UserService userService = new UserService();
-        FinanceAbstractFactory factory = new DefaultFinanceFactory();
+        FinanceAbstractFactory factory = new DefaultFinanceFactory(new TransactionFactory(), new AccountFactory());
         TransactionService transactionService = new TransactionService(userService, factory);
         AccountService accountService = new AccountService(transactionService, factory);
         MementoService mementoService = new MementoService();

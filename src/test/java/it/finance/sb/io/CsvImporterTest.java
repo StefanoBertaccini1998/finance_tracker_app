@@ -1,9 +1,11 @@
 package it.finance.sb.io;
 
+import it.finance.sb.exception.CsvParseException;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.factory.AccountFactory;
 import it.finance.sb.factory.DefaultFinanceFactory;
 import it.finance.sb.factory.FinanceAbstractFactory;
+import it.finance.sb.factory.TransactionFactory;
 import it.finance.sb.model.account.AccounType;
 import it.finance.sb.model.account.AccountInterface;
 import it.finance.sb.model.transaction.AbstractTransaction;
@@ -21,17 +23,19 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CsvImporterTest  {
+class CsvImporterTest {
     CsvImporter csvTransactionImporter;
+    FinanceAbstractFactory factory;
+
     @BeforeEach
-    void setUp(){
-        FinanceAbstractFactory factory = new DefaultFinanceFactory();
+    void setUp() {
+        factory = new DefaultFinanceFactory(new TransactionFactory(), new AccountFactory());
         csvTransactionImporter = new CsvImporter(factory);
     }
 
     @Test
     void testImport_validLines_shouldReturnTransactions() throws Exception {
-        AccountInterface acc = AccountFactory.createAccount(AccounType.BANK, "Main", 1000);
+        AccountInterface acc = factory.createAccount(AccounType.BANK, "Main", 1000);
         Map<String, AccountInterface> map = new HashMap<>();
         map.put("Main", acc);
 
@@ -54,7 +58,7 @@ class CsvImporterTest  {
 
     @Test
     void testImport_invalidAmount_shouldThrowOrSkip() throws Exception {
-        AccountInterface acc = AccountFactory.createAccount(AccounType.BANK, "Main", 1000);
+        AccountInterface acc = factory.createAccount(AccounType.BANK, "Main", 1000);
         Map<String, AccountInterface> map = new HashMap<>();
         map.put("Main", acc);
 
@@ -66,7 +70,7 @@ class CsvImporterTest  {
         Path temp = Files.createTempFile("csv_test_", ".csv");
         Files.write(temp, lines);
 
-        assertThrows(DataValidationException.class, () -> csvTransactionImporter.importFrom(temp, map, false, false, new ArrayList<>()));
+        assertThrows(CsvParseException.class, () -> csvTransactionImporter.importFrom(temp, map, false, false, new ArrayList<>()));
 
         Files.deleteIfExists(temp);
     }

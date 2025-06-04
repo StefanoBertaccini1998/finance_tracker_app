@@ -60,12 +60,21 @@ class TransactionFactoryTest {
 
         TransactionFactory.registerCreator(TransactionType.INCOME, (amount, category, reason, date, to, from) ->
                 new AbstractTransaction(amount, category, reason, date, TransactionType.INCOME) {
-                    @Override public void displayTransaction() {/*Test method*/}
-                    @Override public double getTotal() { return amount; }
-                    @Override public String toCsv() { return "MOCKED"; }
+                    @Override
+                    public void displayTransaction() {/*Test method*/}
+
+                    @Override
+                    public double getTotal() {
+                        return amount;
+                    }
+
+                    @Override
+                    public String[] toCsv() {
+                        return new String[]{"MOCKED"};
+                    }
                 });
 
         AbstractTransaction tx = realFactory.createIncome(100.0, "Mocked", "Custom", now, toAccount);
-        assertEquals("MOCKED", tx.toCsv());
+        assertArrayEquals(new String[]{"MOCKED"}, tx.toCsv());
     }
 }

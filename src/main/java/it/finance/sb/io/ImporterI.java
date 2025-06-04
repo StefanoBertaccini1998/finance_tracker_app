@@ -1,5 +1,6 @@
 package it.finance.sb.io;
 
+import it.finance.sb.exception.CsvParseException;
 import it.finance.sb.exception.DataValidationException;
 import it.finance.sb.model.account.AccountInterface;
 
@@ -13,5 +14,5 @@ public interface ImporterI<T> {
                        Map<String, AccountInterface> referenceMap,
                        boolean autoCreate,
                        boolean skipErrors,
-                       List<String> errorLog) throws IOException, DataValidationException;
+                       List<String> errorLog) throws IOException, CsvParseException, DataValidationException;
 }

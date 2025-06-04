@@ -66,8 +66,17 @@ public class MovementTransaction extends AbstractTransaction {
     }
 
     @Override
-    public String toCsv() {
-        return formatCsvLine(fromAccount.getName(), toAccount.getName(), category, reason, date.getTime());
+    public String[] toCsv() {
+        return new String[]{
+                String.valueOf(transactionId),
+                type.name(),
+                String.valueOf(amount),
+                fromAccount == null ? "" : fromAccount.getName(),
+                toAccount   == null ? "" : toAccount.getName(),
+                category    == null ? "" : category,
+                reason      == null ? "" : reason,
+                String.valueOf(date.getTime())
+        };
     }
 
     @Override
